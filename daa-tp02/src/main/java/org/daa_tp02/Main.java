@@ -17,6 +17,26 @@ public class Main {
             this.M = M;
             this.N = N;
             this.n = n;
+            this.exercises = new ArrayList<>();
+        }
+    }
+
+    private static class Student {
+        int studentId;
+        List<Exercise> exercises;
+
+        public Student(int studentId) {
+            this.studentId = studentId;
+            this.exercises = new ArrayList<>();
+        }
+
+        public void addExercise(Exercise exercise) {
+            exercises.add(exercise);
+        }
+
+        @Override
+        public String toString() {
+            return "Student " + studentId + ": " + exercises;
         }
     }
 
