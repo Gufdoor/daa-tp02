@@ -54,6 +54,15 @@ public class Main {
         return exercises;
     }
 
+    private static Exercise parseReadLineToExercise(String line) {
+        final String[] parts = line.split(" ");
+        int studentId = Integer.parseInt(parts[0]);
+        int equipmentId = Integer.parseInt(parts[1]);
+        double duration = Double.parseDouble(parts[2]);
+
+        return new Exercise(studentId, equipmentId, duration);
+    }
+
     public static void main(String[] args) {
     }
 }
