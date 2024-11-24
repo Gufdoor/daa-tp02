@@ -1,7 +1,7 @@
 package org.daa_tp02;
 
 public class Main {
-    static class Exercise {
+    private static class Exercise {
         int studentId;
         int equipmentId;
         // In minutes
