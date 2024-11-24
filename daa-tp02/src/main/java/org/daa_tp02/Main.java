@@ -11,13 +11,17 @@ public class Main {
         int M; // Equipment count
         int N; // Student count
         int n; // Exercise count
-        List<Exercise> exercises;
+        List<Student> students;
 
         public Academy(int M, int N, int n) {
             this.M = M;
             this.N = N;
             this.n = n;
-            this.exercises = new ArrayList<>();
+            this.students = new ArrayList<>();
+        }
+
+        public void addStudent(Student student) {
+            students.add(student);
         }
     }
 
@@ -32,11 +36,6 @@ public class Main {
 
         public void addExercise(Exercise exercise) {
             exercises.add(exercise);
-        }
-
-        @Override
-        public String toString() {
-            return "Student " + studentId + ": " + exercises;
         }
     }
 
@@ -69,25 +68,31 @@ public class Main {
      */
     private static Academy readAcademyDataFromFile(String filePath) throws IOException {
         final BufferedReader reader = new BufferedReader(new FileReader(filePath));
-        final List<Exercise> exercises = new ArrayList<>();
-
         final int equipmentCount = Integer.parseInt(reader.readLine().split("=")[1].trim());
         final int studentCount = Integer.parseInt(reader.readLine().split("=")[1].trim());
         final int exerciseCount = Integer.parseInt(reader.readLine().split("=")[1].trim());
         final Academy academy = new Academy(equipmentCount, studentCount, exerciseCount);
 
-        boolean isNotEOF = true;
-
-        while (isNotEOF) {
+        while (true) {
             final String line = reader.readLine();
 
-            if (line != null)
-                exercises.add(parseReadLineToExercise(line));
-            else isNotEOF = false;
+            if (line == null) break;
+
+            final Exercise exercise = parseReadLineToExercise(line);
+            Student student = academy.students.stream()
+                    .filter(auxStudent -> auxStudent.studentId == exercise.studentId)
+                    .findFirst()
+                    .orElse(null);
+
+            if (student == null) {
+                student = new Student(exercise.studentId);
+                academy.students.add(student);
+            }
+
+            student.addExercise(exercise);
         }
 
         reader.close();
-        academy.exercises = exercises;
 
         return academy;
     }
@@ -113,8 +118,9 @@ public class Main {
         try {
             final Academy academy = readAcademyDataFromFile(filePath);
 
-            for (Exercise exercise : academy.exercises)
-                System.out.println(exercise.toString());
+            for (Student student : academy.students)
+                for (Exercise exercise : student.exercises)
+                    System.out.println(exercise.toString());
         } catch (IOException e) {
             System.err.println("Error reading the file: " + e.getMessage());
         }
