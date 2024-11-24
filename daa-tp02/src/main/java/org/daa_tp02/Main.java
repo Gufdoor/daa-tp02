@@ -72,6 +72,12 @@ public class Main {
         return academy;
     }
 
+    /**
+     * Parses a read line into an Exercise object.
+     *
+     * @param line read line with an exercise data
+     * @return an Exercise object
+     */
     private static Exercise parseReadLineToExercise(String line) {
         final String[] parts = line.split(" ");
         final int studentId = Integer.parseInt(parts[0]);
