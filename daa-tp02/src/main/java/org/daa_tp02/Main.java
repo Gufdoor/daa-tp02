@@ -106,12 +106,44 @@ public class Main {
     }
 
     /**
+     * Controls brute-force permutation processing
+     *
+     * @param academy receives an Academy object generated from the read file
+     * @return a list of exercises that represents the optimal solution
+     */
+    private static List<Exercise> handleBruteForcePermutation(Academy academy) {
+        final List<List<Exercise>> permutations = new ArrayList<>();
+        generatePermutations(academy.students, new ArrayList<>(), permutations);
+        System.out.println("Generate permutations count: " + permutations.size());
+
+        double minTime = Double.MAX_VALUE;
+        List<Exercise> optimalBruteForceSolution = new ArrayList<>();
+
+        for (List<Exercise> permutation : permutations) {
+            double elapsed = simulateSchedule(academy.M, permutation);
+
+            if (elapsed < minTime) {
+                minTime = elapsed;
+                optimalBruteForceSolution = permutation;
+            }
+        }
+
+        System.out.printf("Lowest time: %.2f minutes%n", minTime);
+        System.out.println("Optimal sequence solution:");
+
+        for (Exercise exercise : optimalBruteForceSolution)
+            System.out.println(exercise);
+
+        return optimalBruteForceSolution;
+    }
+
+    /**
      * For a given group of exercises, process all combinations possible, respecting that each student must complete
      * its exercises sequence in order.
      *
-     * @param students a list of Students objects containing all exercises sequences
+     * @param students        a list of Students objects containing all exercises sequences
      * @param stepPermutation current permutation recursion step
-     * @param permutations result permutations
+     * @param permutations    result permutations
      */
     private static void generatePermutations(List<Student> students, List<Exercise> stepPermutation, List<List<Exercise>> permutations) {
         if (students.isEmpty()) {
@@ -136,7 +168,7 @@ public class Main {
     /**
      * Calculates the duration time for a given permutation.
      *
-     * @param M an academy equipments count
+     * @param M        an academy equipments count
      * @param schedule exercises list from a permutation
      * @return minutes duration in double
      */
@@ -165,28 +197,7 @@ public class Main {
 
         try {
             final Academy academy = readAcademyDataFromFile(filePath);
-            final List<List<Exercise>> permutations = new ArrayList<>();
-            generatePermutations(academy.students, new ArrayList<>(), permutations);
-            System.out.println("Generate permutations count: " + permutations.size());
-
-            double minTime = Double.MAX_VALUE;
-            List<Exercise> optimalExercisesOrder = new ArrayList<>();
-
-            for (List<Exercise> permutation : permutations) {
-                double elapsed = simulateSchedule(academy.M, permutation);
-
-                if (elapsed < minTime) {
-                    minTime = elapsed;
-                    optimalExercisesOrder = permutation;
-                }
-            }
-
-            System.out.printf("Menor tempo total: %.2f minutos%n", minTime);
-            System.out.println("Melhor sequência:");
-
-            for (Exercise exercise : optimalExercisesOrder) {
-                System.out.println(exercise);
-            }
+            final List<Exercise> optimalBruteForceSolution = handleBruteForcePermutation(academy);
         } catch (IOException e) {
             System.err.println("Error reading the file: " + e.getMessage());
         }
