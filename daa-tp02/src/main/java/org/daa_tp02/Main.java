@@ -15,10 +15,11 @@ import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 public class Main {
+    //region Objects
     private static class Academy {
         int M; // Equipment count
         int N; // Student count
@@ -189,6 +190,9 @@ public class Main {
             return calendar.getTime();
         }
     }
+    //endregion
+
+    //region File reading
 
     /**
      * Reads the input file and parses it into an Academy object.
@@ -241,145 +245,7 @@ public class Main {
 
         return new Exercise(studentId, equipmentId, duration);
     }
-
-    /**
-     * Controls brute-force permutation processing
-     *
-     * @param academy receives an Academy object generated from the read file
-     * @return a list of exercises that represents the optimal solution
-     */
-    private static List<Exercise> handleBruteForcePermutation(Academy academy) {
-        final List<List<Exercise>> permutations = new ArrayList<>();
-        generatePermutations(academy.students, new ArrayList<>(), permutations);
-        System.out.println("Generate permutations count: " + permutations.size());
-
-        double minTime = Double.MAX_VALUE;
-        List<Exercise> optimalBruteForceSolution = new ArrayList<>();
-
-        for (List<Exercise> permutation : permutations) {
-            double elapsed = simulateSchedule(academy.M, permutation);
-
-            if (elapsed < minTime) {
-                minTime = elapsed;
-                optimalBruteForceSolution = permutation;
-            }
-        }
-
-        System.out.printf("Lowest time: %.2f minutes%n", minTime);
-        System.out.println("%nOptimal sequence solution:");
-
-        for (Exercise exercise : optimalBruteForceSolution)
-            System.out.println(exercise);
-
-        return optimalBruteForceSolution;
-    }
-
-    /**
-     * Controls approximate heuristic processing
-     *
-     * @param academy receives an Academy object generated from the read file
-     * @return a list of exercises that represents the optimal solution
-     */
-    private static List<Exercise> approximateHeuristic(Academy academy) {
-        List<List<Exercise>> studentsExercises = new ArrayList<>();
-        for (Student student : academy.students) {
-            studentsExercises.add(new ArrayList<>(student.exercises));
-        }
-
-        List<Exercise> approximateSolution = new ArrayList<>();
-        double minTime = 0;
-
-        while (!studentsExercises.isEmpty()) {
-            Exercise nextExercise = null;
-            minTime = Double.MAX_VALUE;
-
-            for (List<Exercise> studentExercises : studentsExercises) {
-                if (studentExercises.isEmpty())
-                    continue;
-
-                Exercise exercise = studentExercises.get(0);
-                double elapsed = simulateScheduleForExercise(academy.M, approximateSolution, exercise);
-                if (elapsed < minTime) {
-                    minTime = elapsed;
-                    nextExercise = exercise;
-                }
-            }
-
-            if (nextExercise != null) {
-                approximateSolution.add(nextExercise);
-
-                for (List<Exercise> studentExercises : studentsExercises) {
-                    if (!studentExercises.isEmpty() && studentExercises.get(0).equals(nextExercise)) {
-                        studentExercises.remove(0);
-                        break;
-                    }
-                }
-
-                studentsExercises.removeIf(List::isEmpty);
-            }
-        }
-
-        System.out.printf("Lowest time: %.2f minutes%n", minTime);
-        System.out.println("Optimal sequence solution:");
-        for (Exercise exercise : approximateSolution)
-            System.out.println(exercise);
-
-        return approximateSolution;
-    }
-
-    /**
-     * Simulates the scheduling of exercises for all students and equipment.
-     * It calculates the total time taken for a given schedule of exercises,
-     * considering the availability
-     * of each equipment and the completion times for each student.
-     *
-     * @param M               the number of academy equipments
-     * @param currentSchedule a list of exercises representing the sequence in which tasks
-     *                        are performed
-     * @param nextExercise    next exercise object on the queue to be processed
-     * @return the total duration in minutes (double) when all exercises are
-     * completed
-     */
-    private static double simulateScheduleForExercise(int M, List<Exercise> currentSchedule, Exercise nextExercise) {
-        final List<Exercise> timeSchedule = new ArrayList<>(currentSchedule);
-
-        timeSchedule.add(nextExercise);
-
-        final double timeSimulated = simulateSchedule(M, timeSchedule);
-
-        return timeSimulated - nextExercise.duration;
-    }
-
-    /**
-     * For a given group of exercises, process all combinations possible, respecting
-     * that each student must complete
-     * its exercises sequence in order.
-     *
-     * @param students        a list of Students objects containing all exercises
-     *                        sequences
-     * @param stepPermutation current permutation recursion step
-     * @param permutations    result permutations
-     */
-    private static void generatePermutations(List<Student> students, List<Exercise> stepPermutation,
-                                             List<List<Exercise>> permutations) {
-        if (students.isEmpty()) {
-            permutations.add(new ArrayList<>(stepPermutation));
-
-            return;
-        }
-
-        for (Student student : students) {
-            final List<Exercise> exercises = student.exercises;
-            // Remaining students exercises to process
-            final List<Student> remainingStudents = new ArrayList<>(students);
-
-            remainingStudents.remove(student);
-            stepPermutation.addAll(exercises);
-            generatePermutations(remainingStudents, stepPermutation, permutations);
-            // Remove changes to current permutation and continue to next student
-            stepPermutation.subList(stepPermutation.size() - exercises.size(), stepPermutation.size()).clear();
-        }
-    }
+    //endregion
 
     /**
      * Calculates the duration time for a given permutation.
@@ -408,6 +274,155 @@ public class Main {
         // Get max elapsed time from students
         return Collections.max(studentsElapsedTimes.values());
     }
+
+    //region Brute Force Permutation
+
+    /**
+     * For a given group of exercises, process all combinations possible, respecting
+     * that each student must complete
+     * its exercises sequence in order.
+     *
+     * @param students        a list of Students objects containing all exercises
+     *                        sequences
+     * @param stepPermutation current permutation recursion step
+     * @param permutations    result permutations
+     */
+    private static void generateBruteForcePermutations(List<Student> students, List<Exercise> stepPermutation,
+                                                       List<List<Exercise>> permutations) {
+        if (students.isEmpty()) {
+            permutations.add(new ArrayList<>(stepPermutation));
+
+            return;
+        }
+
+        for (Student student : students) {
+            final List<Exercise> exercises = student.exercises;
+            // Remaining students exercises to process
+            final List<Student> remainingStudents = new ArrayList<>(students);
+
+            remainingStudents.remove(student);
+            stepPermutation.addAll(exercises);
+            generateBruteForcePermutations(remainingStudents, stepPermutation, permutations);
+            // Remove changes to current permutation and continue to next student
+            stepPermutation.subList(stepPermutation.size() - exercises.size(), stepPermutation.size()).clear();
+        }
+    }
+
+
+    /**
+     * Controls brute-force permutation processing
+     *
+     * @param academy receives an Academy object generated from the read file
+     * @return a list of exercises that represents the optimal solution
+     */
+    private static List<Exercise> handleBruteForcePermutation(Academy academy) {
+        final List<List<Exercise>> permutations = new ArrayList<>();
+        generateBruteForcePermutations(academy.students, new ArrayList<>(), permutations);
+        System.out.println("Generate permutations count: " + permutations.size());
+
+        double minTime = Double.MAX_VALUE;
+        List<Exercise> optimalBruteForceSolution = new ArrayList<>();
+
+        for (List<Exercise> permutation : permutations) {
+            double elapsed = simulateSchedule(academy.M, permutation);
+
+            if (elapsed < minTime) {
+                minTime = elapsed;
+                optimalBruteForceSolution = permutation;
+            }
+        }
+
+        System.out.printf("%nLowest time: %.2f minutes%n", minTime);
+        System.out.println("%nOptimal Brute Force sequence solution:");
+
+        for (Exercise exercise : optimalBruteForceSolution)
+            System.out.println(exercise);
+
+        return optimalBruteForceSolution;
+    }
+    //endregion
+
+    //region Approximate Heuristic Schedule
+    /**
+     * Simulates the scheduling of exercises for all students and equipment.
+     * It calculates the total time taken for a given schedule of exercises,
+     * considering the availability
+     * of each equipment and the completion times for each student.
+     *
+     * @param M               the number of academy equipments
+     * @param currentSchedule a list of exercises representing the sequence in which tasks
+     *                        are performed
+     * @param nextExercise    next exercise object on the queue to be processed
+     * @return the total duration in minutes (double) when all exercises are
+     * completed
+     */
+    private static double handleApproximateHeuristicSchedule(int M, List<Exercise> currentSchedule, Exercise nextExercise) {
+        final List<Exercise> timeSchedule = new ArrayList<>(currentSchedule);
+
+        timeSchedule.add(nextExercise);
+
+        final double timeSimulated = simulateSchedule(M, timeSchedule);
+
+        return timeSimulated - nextExercise.duration;
+    }
+
+    /**
+     * Controls approximate heuristic processing
+     *
+     * @param academy receives an Academy object generated from the read file
+     * @return a list of exercises that represents the optimal solution
+     */
+    private static List<Exercise> approximateHeuristic(Academy academy) {
+        final List<List<Exercise>> studentsExercises = new ArrayList<>();
+
+        for (Student student : academy.students) {
+            studentsExercises.add(new ArrayList<>(student.exercises));
+        }
+
+        final List<Exercise> approximateSolution = new ArrayList<>();
+        double minTime = 0;
+
+        while (!studentsExercises.isEmpty()) {
+            Exercise nextExercise = null;
+            minTime = Double.MAX_VALUE;
+
+            for (List<Exercise> studentExercises : studentsExercises) {
+                if (studentExercises.isEmpty())
+                    continue;
+
+                final Exercise exercise = studentExercises.get(0);
+                final double elapsed = handleApproximateHeuristicSchedule(academy.M, approximateSolution, exercise);
+
+                if (elapsed < minTime) {
+                    minTime = elapsed;
+                    nextExercise = exercise;
+                }
+            }
+
+            if (nextExercise != null) {
+                approximateSolution.add(nextExercise);
+
+                for (List<Exercise> studentExercises : studentsExercises) {
+                    if (!studentExercises.isEmpty() && studentExercises.get(0).equals(nextExercise)) {
+                        studentExercises.remove(0);
+
+                        break;
+                    }
+                }
+
+                studentsExercises.removeIf(List::isEmpty);
+            }
+        }
+
+        System.out.printf("%nLowest time: %.2f minutes%n", minTime);
+        System.out.println("Optimal Approximate Heuristic sequence solution:");
+
+        for (Exercise exercise : approximateSolution)
+            System.out.println(exercise);
+
+        return approximateSolution;
+    }
+    //endregion
 
     public static void main(String[] args) {
         final String filePath = "exercises.txt";
