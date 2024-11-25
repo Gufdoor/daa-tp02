@@ -1,5 +1,23 @@
 package org.daa_tp02;
 
+import java.awt.Color;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import javax.swing.JFrame;
+import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
+
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -10,16 +28,8 @@ import org.jfree.data.gantt.Task;
 import org.jfree.data.gantt.TaskSeries;
 import org.jfree.data.gantt.TaskSeriesCollection;
 
-import javax.swing.*;
-import java.awt.*;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.List;
-import java.util.*;
-
 public class Main {
-    //region Objects
+    // region Objects
     private static class Academy {
         int M; // Equipment count
         int N; // Student count
@@ -73,7 +83,8 @@ public class Main {
 
     private static class ChartPlotter {
         /**
-         * Handles a Gantt chart plot, managing its data and also the window in which it'll be rendered.
+         * Handles a Gantt chart plot, managing its data and also the window in which
+         * it'll be rendered.
          *
          * @param charts list of build Gantt charts
          */
@@ -111,7 +122,8 @@ public class Main {
         }
 
         /**
-         * Manage an exercise object list to create the necessary data to render a Gantt chart.
+         * Manage an exercise object list to create the necessary data to render a Gantt
+         * chart.
          *
          * @param solution solution containing an ordered exercise object list
          */
@@ -145,12 +157,12 @@ public class Main {
                     title,
                     "Equipments",
                     "Elapsed Time (minutes)",
-                    dataset
-            );
+                    dataset);
         }
 
         /**
-         * Receives a Gantt and customizes its series colours. This way we can represents each student by different
+         * Receives a Gantt and customizes its series colours. This way we can
+         * represents each student by different
          * colours.
          *
          * @param chart Gantt chart already created
@@ -184,11 +196,13 @@ public class Main {
         }
 
         /**
-         * Parse any minutes count to Date type starting from 0. This is expected to create a date that represents
+         * Parse any minutes count to Date type starting from 0. This is expected to
+         * create a date that represents
          * an elapsed time in minutes.
          *
          * @param minutes minutes count
-         * @return minutes converted into Date (year 0, month 0, day 0, x hour, x minute)
+         * @return minutes converted into Date (year 0, month 0, day 0, x hour, x
+         *         minute)
          */
         private static Date parseMinutesToDate(double minutes) {
             Calendar calendar = Calendar.getInstance();
@@ -204,9 +218,9 @@ public class Main {
             return calendar.getTime();
         }
     }
-    //endregion
+    // endregion
 
-    //region File reading
+    // region File reading
 
     /**
      * Reads the input file and parses it into an Academy object.
@@ -259,7 +273,7 @@ public class Main {
 
         return new Exercise(studentId, equipmentId, duration);
     }
-    //endregion
+    // endregion
 
     /**
      * Calculates the duration time for a given permutation.
@@ -289,7 +303,7 @@ public class Main {
         return Collections.max(studentsElapsedTimes.values());
     }
 
-    //region Brute Force Permutation
+    // region Brute Force Permutation
 
     /**
      * For a given group of exercises, process all combinations possible, respecting
@@ -302,7 +316,7 @@ public class Main {
      * @param permutations    result permutations
      */
     private static void generateBruteForcePermutations(List<Student> students, List<Exercise> stepPermutation,
-                                                       List<List<Exercise>> permutations) {
+            List<List<Exercise>> permutations) {
         if (students.isEmpty()) {
             permutations.add(new ArrayList<>(stepPermutation));
 
@@ -353,9 +367,9 @@ public class Main {
 
         return optimalBruteForceSolution;
     }
-    //endregion
+    // endregion
 
-    //region Branch and Bound
+    // region Branch and Bound
 
     /**
      * Controls Branch-And-Bound processing
@@ -366,7 +380,7 @@ public class Main {
     private static List<Exercise> handleBranchAndBound(Academy academy) {
         final List<Exercise> optimalBranchAndBoundSolution = new ArrayList<>();
         final List<Exercise> currentSolution = new ArrayList<>();
-        final double[] minTime = {Double.MAX_VALUE};
+        final double[] minTime = { Double.MAX_VALUE };
         final double[] equipmentFreeTimes = new double[academy.M];
         final Map<Integer, Double> studentsElapsedTimes = new HashMap<>();
         final Map<Integer, Integer> studentProgress = new HashMap<>();
@@ -375,7 +389,8 @@ public class Main {
             studentProgress.put(student.studentId, 0);
         }
 
-        exploreBranch(academy, currentSolution, optimalBranchAndBoundSolution, minTime, equipmentFreeTimes, studentsElapsedTimes, studentProgress);
+        exploreBranch(academy, currentSolution, optimalBranchAndBoundSolution, minTime, equipmentFreeTimes,
+                studentsElapsedTimes, studentProgress);
 
         System.out.printf("%nBranch-and-Bound Lowest time: %.2f minutes%n", minTime[0]);
         System.out.println("Optimal Branch-and-Bound sequence solution:");
@@ -388,19 +403,29 @@ public class Main {
     }
 
     /**
-     * Recursively explores branches of the solution tree for the Branch-And-Bound algorithm.
+     * Recursively explores branches of the solution tree for the Branch-And-Bound
+     * algorithm.
      *
-     * @param academy                       receives an Academy object generated from the read file
-     * @param currentSolution               the current partial solution being explored
-     * @param optimalBranchAndBoundSolution the list that stores the best solution found so far
-     * @param minTime                       an array containing the minimum time found so far, updated during the process
-     * @param equipmentFreeTimes            an array representing the availability of each piece of equipment
-     * @param studentsElapsedTimes          a map tracking the elapsed time for each student
-     * @param studentProgress               a map tracking the current progress of each student (index of their next exercise)
+     * @param academy                       receives an Academy object generated
+     *                                      from the read file
+     * @param currentSolution               the current partial solution being
+     *                                      explored
+     * @param optimalBranchAndBoundSolution the list that stores the best solution
+     *                                      found so far
+     * @param minTime                       an array containing the minimum time
+     *                                      found so far, updated during the process
+     * @param equipmentFreeTimes            an array representing the availability
+     *                                      of each piece of equipment
+     * @param studentsElapsedTimes          a map tracking the elapsed time for each
+     *                                      student
+     * @param studentProgress               a map tracking the current progress of
+     *                                      each student (index of their next
+     *                                      exercise)
      */
-    private static void exploreBranch(Academy academy, List<Exercise> currentSolution, List<Exercise> optimalBranchAndBoundSolution,
-                                      double[] minTime, double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
-                                      Map<Integer, Integer> studentProgress) {
+    private static void exploreBranch(Academy academy, List<Exercise> currentSolution,
+            List<Exercise> optimalBranchAndBoundSolution,
+            double[] minTime, double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
+            Map<Integer, Integer> studentProgress) {
         final double currentElapsed = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
         final double lowerBound = calculateLowerBound(
                 academy, currentSolution, equipmentFreeTimes, studentsElapsedTimes, studentProgress);
@@ -453,16 +478,19 @@ public class Main {
     /**
      * Calculates an improved lower bound for the Branch-And-Bound algorithm
      *
-     * @param academy              receives an Academy object generated from the read file
+     * @param academy              receives an Academy object generated from the
+     *                             read file
      * @param currentSolution      the current partial solution being evaluated
-     * @param equipmentFreeTimes   an array representing the availability of each piece of equipment
+     * @param equipmentFreeTimes   an array representing the availability of each
+     *                             piece of equipment
      * @param studentsElapsedTimes a map tracking the elapsed time for each student
-     * @param studentProgress      a map tracking the current progress of each student (index of their next exercise)
+     * @param studentProgress      a map tracking the current progress of each
+     *                             student (index of their next exercise)
      * @return the lower bound estimate as a double value
      */
     private static double calculateLowerBound(Academy academy, List<Exercise> currentSolution,
-                                              double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
-                                              Map<Integer, Integer> studentProgress) {
+            double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
+            Map<Integer, Integer> studentProgress) {
 
         double lowerBound = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
 
@@ -482,9 +510,9 @@ public class Main {
 
         return lowerBound;
     }
-    //endregion
+    // endregion
 
-    //region Approximate Heuristic
+    // region Approximate Heuristic
 
     /**
      * Simulates the scheduling of exercises for all students and equipment.
@@ -493,13 +521,15 @@ public class Main {
      * of each equipment and the completion times for each student.
      *
      * @param M               the number of academy equipments
-     * @param currentSchedule a list of exercises representing the sequence in which tasks
+     * @param currentSchedule a list of exercises representing the sequence in which
+     *                        tasks
      *                        are performed
      * @param nextExercise    next exercise object on the queue to be processed
      * @return the total duration in minutes (double) when all exercises are
-     * completed
+     *         completed
      */
-    private static double handleApproximateHeuristicSchedule(int M, List<Exercise> currentSchedule, Exercise nextExercise) {
+    private static double handleApproximateHeuristicSchedule(int M, List<Exercise> currentSchedule,
+            Exercise nextExercise) {
         final List<Exercise> timeSchedule = new ArrayList<>(currentSchedule);
 
         timeSchedule.add(nextExercise);
@@ -565,7 +595,7 @@ public class Main {
 
         return approximateSolution;
     }
-    //endregion
+    // endregion
 
     public static void main(String[] args) {
         final String filePath = "exercises.txt";
@@ -580,10 +610,14 @@ public class Main {
             final List<Exercise> bruteForceSolution = handleBruteForcePermutation(academy);
             final List<Exercise> approximateHeuristicSolution = approximateHeuristic(academy);
             final List<Exercise> branchAndBoundSolution = handleBranchAndBound(academy);
-            final ChartPanel bruteForceChart = ChartPlotter.handleGanttChart("Brute-Force Solution", bruteForceSolution);
-            final ChartPanel heuristicChart = ChartPlotter.handleGanttChart("Approximate Heuristic Solution", approximateHeuristicSolution);
-            final ChartPanel branchBoundChart = ChartPlotter.handleGanttChart("Branch and Bound Solution", branchAndBoundSolution);
-            final List<String> chartTabTitles = Arrays.asList("Brute-Force", "Approximate Heuristic", "Branch and Bound");
+            final ChartPanel bruteForceChart = ChartPlotter.handleGanttChart("Brute-Force Solution",
+                    bruteForceSolution);
+            final ChartPanel heuristicChart = ChartPlotter.handleGanttChart("Approximate Heuristic Solution",
+                    approximateHeuristicSolution);
+            final ChartPanel branchBoundChart = ChartPlotter.handleGanttChart("Branch and Bound Solution",
+                    branchAndBoundSolution);
+            final List<String> chartTabTitles = Arrays.asList("Brute-Force", "Approximate Heuristic",
+                    "Branch and Bound");
             final List<ChartPanel> chartPanels = Arrays.asList(bruteForceChart, heuristicChart, branchBoundChart);
 
             ChartPlotter.plotGanttChart(chartTabTitles, chartPanels);
