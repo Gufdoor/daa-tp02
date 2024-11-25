@@ -356,8 +356,6 @@ public class Main {
     }
     //endregion
 
-    // TODO: adicionar final em todas as variáveis do branch and bound que não são reinicializadas
-    ///  - remover todos os comentários em português, se achar necessário deixar algum, traduzir para inglês
     //region Branch and Bound
 
     /**
@@ -367,14 +365,14 @@ public class Main {
      * @return a list of exercises that represents the optimal solution
      */
     private static List<Exercise> handleBranchAndBound(Academy academy) {
-        List<Exercise> optimalBranchAndBoundSolution = new ArrayList<>();
-        List<Exercise> currentSolution = new ArrayList<>();
-        double[] minTime = {Double.MAX_VALUE};
-        double[] equipmentFreeTimes = new double[academy.M];
+        final List<Exercise> optimalBranchAndBoundSolution = new ArrayList<>();
+        final List<Exercise> currentSolution = new ArrayList<>();
+        final double[] minTime = {Double.MAX_VALUE};
+        final double[] equipmentFreeTimes = new double[academy.M];
 
-        Map<Integer, Double> studentsElapsedTimes = new HashMap<>();
+        final Map<Integer, Double> studentsElapsedTimes = new HashMap<>();
 
-        Map<Integer, Integer> studentProgress = new HashMap<>();
+        final Map<Integer, Integer> studentProgress = new HashMap<>();
         for (Student student : academy.students) {
             studentProgress.put(student.studentId, 0);
         }
@@ -390,35 +388,34 @@ public class Main {
         return optimalBranchAndBoundSolution;
     }
 
-    // TODO: adicionar parâmetros restantes na doc
     /**
-     * Controls Branch-And-Bound processing
+     * Recursively explores branches of the solution tree for the Branch-And-Bound algorithm.
      *
      * @param academy         receives an Academy object generated from the read file
      * @param currentSolution the current partial solution being explored
-     * @param optimalSolution the list that stores the best solution found so far
+     * @param optimalBranchAndBoundSolution the list that stores the best solution found so far
      * @param minTime         an array containing the minimum time found so far, updated during the process
+     * @param equipmentFreeTimes   an array representing the availability of each piece of equipment
+     * @param studentsElapsedTimes a map tracking the elapsed time for each student
+     * @param studentProgress      a map tracking the current progress of each student (index of their next exercise)
      */
-    private static void exploreBranch(Academy academy, List<Exercise> currentSolution, List<Exercise> optimalSolution,
+    private static void exploreBranch(Academy academy, List<Exercise> currentSolution, List<Exercise> optimalBranchAndBoundSolution,
                                       double[] minTime, double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
                                       Map<Integer, Integer> studentProgress) {
-        double currentElapsed = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
+        final double currentElapsed = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
 
-        double lowerBound = calculateLowerBound(
+        final double lowerBound = calculateLowerBound(
                 academy, currentSolution, equipmentFreeTimes, studentsElapsedTimes, studentProgress);
 
-        // Poda: se o lower bound for maior ou igual ao melhor tempo conhecido, não
-        // explorar este ramo
         if (lowerBound >= minTime[0]) {
             return;
         }
 
-        // Verificar se a solução está completa
         if (currentSolution.size() == academy.n) {
             if (currentElapsed < minTime[0]) {
                 minTime[0] = currentElapsed;
-                optimalSolution.clear();
-                optimalSolution.addAll(currentSolution);
+                optimalBranchAndBoundSolution.clear();
+                optimalBranchAndBoundSolution.addAll(currentSolution);
             }
             return;
         }
@@ -446,10 +443,10 @@ public class Main {
             studentProgress.put(student.studentId, progressIndex + 1);
 
             exploreBranch(
-                    academy, currentSolution, optimalSolution, minTime,
+                    academy, currentSolution, optimalBranchAndBoundSolution, minTime,
                     equipmentFreeTimes, studentsElapsedTimes, studentProgress);
 
-            // Retroceder estado (backtracking)
+            //(backtracking)
             equipmentFreeTimes[equipmentIdx] = prevEquipmentTime;
             studentsElapsedTimes.put(nextExercise.studentId, prevStudentTime);
             currentSolution.remove(currentSolution.size() - 1);
@@ -457,12 +454,14 @@ public class Main {
         }
     }
 
-    // TODO: adicionar parâmetros restantes na doc
     /**
-     * Controls Branch-And-Bound processing
+     * Calculates an improved lower bound for the Branch-And-Bound algorithm
      *
      * @param academy         receives an Academy object generated from the read file
      * @param currentSolution the current partial solution being evaluated
+     * @param equipmentFreeTimes an array representing the availability of each piece of equipment
+     * @param studentsElapsedTimes a map tracking the elapsed time for each student
+     * @param studentProgress      a map tracking the current progress of each student (index of their next exercise) 
      * @return the lower bound estimate as a double value
      */
     private static double calculateLowerBound(Academy academy, List<Exercise> currentSolution,
@@ -472,16 +471,16 @@ public class Main {
         double lowerBound = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
 
         for (Student student : academy.students) {
-            int progressIndex = studentProgress.get(student.studentId);
+            final int progressIndex = studentProgress.get(student.studentId);
 
             for (int i = progressIndex; i < student.exercises.size(); i++) {
                 Exercise exercise = student.exercises.get(i);
 
-                int equipmentIdx = exercise.equipmentId - 1;
-                double equipmentTime = equipmentFreeTimes[equipmentIdx];
-                double studentTime = studentsElapsedTimes.getOrDefault(student.studentId, 0.0);
+                final int equipmentIdx = exercise.equipmentId - 1;
+                final double equipmentTime = equipmentFreeTimes[equipmentIdx];
+                final double studentTime = studentsElapsedTimes.getOrDefault(student.studentId, 0.0);
 
-                double estimatedStartTime = Math.max(equipmentTime, studentTime);
+                final double estimatedStartTime = Math.max(equipmentTime, studentTime);
                 lowerBound = Math.max(lowerBound, estimatedStartTime + exercise.duration);
             }
         }
