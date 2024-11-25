@@ -333,7 +333,6 @@ public class Main {
 
         for (Student student : students) {
             final List<Exercise> exercises = student.exercises;
-            // Remaining students exercises to process
             final List<Student> remainingStudents = new ArrayList<>(students);
 
             remainingStudents.remove(student);
