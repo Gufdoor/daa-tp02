@@ -1,4 +1,4 @@
-# daa-tp02
+# Design and Analysis Algorithm - Project 02
 
 The StayFit gym wants to optimise the use of equipment by its students in order to reduce the
 the time it takes for them to complete the exercise sequences. The gym
