@@ -51,7 +51,8 @@ public class Main {
 
         @Override
         public String toString() {
-            return "Exercise: " + "studentId = " + studentId + ", equipmentId = " + equipmentId + ", duration = " + duration;
+            return "Exercise: " + "studentId = " + studentId + ", equipmentId = " + equipmentId + ", duration = "
+                    + duration;
         }
     }
 
@@ -72,10 +73,12 @@ public class Main {
         while (true) {
             final String line = reader.readLine();
 
-            if (line == null) break;
+            if (line == null)
+                break;
 
             final Exercise exercise = parseReadLineToExercise(line);
-            Student student = academy.students.stream().filter(auxStudent -> auxStudent.studentId == exercise.studentId).findFirst().orElse(null);
+            Student student = academy.students.stream().filter(auxStudent -> auxStudent.studentId == exercise.studentId)
+                    .findFirst().orElse(null);
 
             if (student == null) {
                 student = new Student(exercise.studentId);
@@ -138,14 +141,96 @@ public class Main {
     }
 
     /**
-     * For a given group of exercises, process all combinations possible, respecting that each student must complete
+     * Controls approximate heuristic processing
+     *
+     * @param academy receives an Academy object generated from the read file
+     * @return a list of exercises that represents the optimal solution
+     */
+    private static List<Exercise> approximateHeuristic(Academy academy) {
+        List<List<Exercise>> studentsExercices = new ArrayList<>();
+        for (Student student : academy.students) {
+            studentsExercices.add(new ArrayList<>(student.exercises));
+        }
+
+        List<Exercise> approximateSolution = new ArrayList<>();
+        double minTime = 0;
+
+        while (!studentsExercices.isEmpty()) {
+            Exercise nextExercise = null;
+            minTime = Double.MAX_VALUE;
+
+            for (List<Exercise> studentExercises : studentsExercices) {
+                if (studentExercises.isEmpty())
+                    continue;
+
+                Exercise exercise = studentExercises.get(0);
+                double elapsed = simulateScheduleForExercise(academy.M, approximateSolution, exercise);
+                if (elapsed < minTime) {
+                    minTime = elapsed;
+                    nextExercise = exercise;
+                }
+            }
+
+            if (nextExercise != null) {
+                approximateSolution.add(nextExercise);
+    
+                // Remove o exercício escolhido da lista do aluno
+                for (List<Exercise> studentExercises : studentsExercices) {
+                    if (!studentExercises.isEmpty() && studentExercises.get(0).equals(nextExercise)) {
+                        studentExercises.remove(0); // Remove o exercício da lista
+                        break;
+                    }
+                }
+    
+                // Remover a lista do aluno se todos os exercícios dele foram processados
+                studentsExercices.removeIf(List::isEmpty);
+            }
+        }
+
+        System.out.printf("Lowest time: %.2f minutes%n", minTime);
+        System.out.println("Optimal sequence solution:");
+        for (Exercise exercise : approximateSolution)
+            System.out.println(exercise);
+
+        return approximateSolution;
+    }
+
+    /**
+     * Simulates the scheduling of exercises for all students and equipment.
+     * It calculates the total time taken for a given schedule of exercises,
+     * considering the availability
+     * of each equipment and the completion times for each student.
+     *
+     * @param M        the number of academy equipments
+     * @param schedule a list of exercises representing the sequence in which tasks
+     *                 are performed
+     * @return the total duration in minutes (double) when all exercises are
+     *         completed
+     */
+    private static double simulateScheduleForExercise(int M, List<Exercise> currentSchedule, Exercise nextExercise) {
+        if (M <= 0) {
+            throw new IllegalArgumentException("The number of equipment must be greater than 0");
+        }
+
+        List<Exercise> timeSchedule = new ArrayList<>(currentSchedule);
+        timeSchedule.add(nextExercise);
+        final double timeSimulated = simulateSchedule(M, timeSchedule);
+
+        return timeSimulated - nextExercise.duration;
+    }
+
+    /**
+     * For a given group of exercises, process all combinations possible, respecting
+     * that each student must complete
      * its exercises sequence in order.
      *
-     * @param students        a list of Students objects containing all exercises sequences
+     * @param students        a list of Students objects containing all exercises
+     *                        sequences
      * @param stepPermutation current permutation recursion step
      * @param permutations    result permutations
      */
-    private static void generatePermutations(List<Student> students, List<Exercise> stepPermutation, List<List<Exercise>> permutations) {
+    private static void generatePermutations(List<Student> students, List<Exercise> stepPermutation,
+            List<List<Exercise>> permutations) {
         if (students.isEmpty()) {
             permutations.add(new ArrayList<>(stepPermutation));
 
@@ -198,6 +283,7 @@ public class Main {
         try {
             final Academy academy = readAcademyDataFromFile(filePath);
             final List<Exercise> optimalBruteForceSolution = handleBruteForcePermutation(academy);
+            final List<Exercise> approximateHeuristicSolution = approximateHeuristic(academy);
         } catch (IOException e) {
             System.err.println("Error reading the file: " + e.getMessage());
         }
