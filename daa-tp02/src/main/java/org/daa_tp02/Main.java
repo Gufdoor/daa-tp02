@@ -356,16 +356,20 @@ public class Main {
     }
     //endregion
 
+    // TODO: adicionar final em todas as variáveis do branch and bound que não são reinicializadas
+    ///  - remover todos os comentários em português, se achar necessário deixar algum, traduzir para inglês
+    //region Branch and Bound
+
     /**
      * Controls Branch-And-Bound processing
      *
      * @param academy receives an Academy object generated from the read file
      * @return a list of exercises that represents the optimal solution
      */
-    private static List<Exercise> handlebranchAndBound(Academy academy) {
+    private static List<Exercise> handleBranchAndBound(Academy academy) {
         List<Exercise> optimalBranchAndBoundSolution = new ArrayList<>();
         List<Exercise> currentSolution = new ArrayList<>();
-        double[] minTime = { Double.MAX_VALUE };
+        double[] minTime = {Double.MAX_VALUE};
         double[] equipmentFreeTimes = new double[academy.M];
 
         Map<Integer, Double> studentsElapsedTimes = new HashMap<>();
@@ -386,17 +390,18 @@ public class Main {
         return optimalBranchAndBoundSolution;
     }
 
+    // TODO: adicionar parâmetros restantes na doc
     /**
      * Controls Branch-And-Bound processing
      *
      * @param academy         receives an Academy object generated from the read file
      * @param currentSolution the current partial solution being explored
-     * @param optimalBranchAndBoundSolution the list that stores the best solution found so far
+     * @param optimalSolution the list that stores the best solution found so far
      * @param minTime         an array containing the minimum time found so far, updated during the process
      */
-    private static void exploreBranch( Academy academy, List<Exercise> currentSolution, List<Exercise> optimalSolution,
-                                       double[] minTime,double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
-                                       Map<Integer, Integer> studentProgress) {
+    private static void exploreBranch(Academy academy, List<Exercise> currentSolution, List<Exercise> optimalSolution,
+                                      double[] minTime, double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
+                                      Map<Integer, Integer> studentProgress) {
         double currentElapsed = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
 
         double lowerBound = calculateLowerBound(
@@ -452,6 +457,7 @@ public class Main {
         }
     }
 
+    // TODO: adicionar parâmetros restantes na doc
     /**
      * Controls Branch-And-Bound processing
      *
@@ -459,9 +465,9 @@ public class Main {
      * @param currentSolution the current partial solution being evaluated
      * @return the lower bound estimate as a double value
      */
-    private static double calculateLowerBound( Academy academy, List<Exercise> currentSolution,
-                                               double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
-                                               Map<Integer, Integer> studentProgress) {
+    private static double calculateLowerBound(Academy academy, List<Exercise> currentSolution,
+                                              double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
+                                              Map<Integer, Integer> studentProgress) {
 
         double lowerBound = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
 
@@ -482,6 +488,7 @@ public class Main {
 
         return lowerBound;
     }
+    //endregion
 
     //region Approximate Heuristic
 
@@ -578,7 +585,7 @@ public class Main {
 
             final List<Exercise> bruteForceSolution = handleBruteForcePermutation(academy);
             final List<Exercise> approximateHeuristicSolution = approximateHeuristic(academy);
-            final List<Exercise> branchAndBoundSolution = handlebranchAndBound(academy);
+            final List<Exercise> branchAndBoundSolution = handleBranchAndBound(academy);
             final ChartPanel bruteForceChart = ChartPlotter.handleGanttChart("Brute-Force Solution", bruteForceSolution);
             final ChartPanel heuristicChart = ChartPlotter.handleGanttChart("Approximate Heuristic Solution", approximateHeuristicSolution);
             final List<String> chartTabTitles = Arrays.asList("Brute-Force", "Approximate Heuristic");
