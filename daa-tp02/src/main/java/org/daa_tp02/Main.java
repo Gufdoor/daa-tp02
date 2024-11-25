@@ -1,3 +1,11 @@
+/**
+ * Solution for DAA Project 02.
+ *
+ * @author  Daniel Lucas Murta
+ * @author  Gabriel Luna dos Anjos
+ * @version 1.0.0
+ */
+
 package org.daa_tp02;
 
 import java.awt.Color;
