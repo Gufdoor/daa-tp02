@@ -140,6 +140,115 @@ public class Main {
         return optimalBruteForceSolution;
     }
 
+    private static List<Exercise> branchAndBound(Academy academy) {
+        final List<Exercise> optimalSolution = new ArrayList<>();
+        final List<Exercise> currentSolution = new ArrayList<>();
+        final double[] minTime = {Double.MAX_VALUE};
+    
+        // Helper function to recursively explore branches
+        exploreBranch(academy, currentSolution, optimalSolution, minTime);
+        
+        System.out.printf("Branch-and-Bound Lowest time: %.2f minutes%n", minTime[0]);
+        System.out.println("Optimal sequence solution:");
+        for (Exercise exercise : optimalSolution) {
+            System.out.println(exercise);
+        }
+        
+        return optimalSolution;
+    }
+    
+    private static void exploreBranch(Academy academy, List<Exercise> currentSolution, List<Exercise> optimalSolution, double[] minTime) {
+        // Calcular o tempo decorrido atual para a solução parcial
+        double currentElapsed = simulateSchedule(academy.M, currentSolution);
+    
+        // Calcular o lower bound para a solução parcial
+        double lowerBound = currentElapsed + calculateImprovedLowerBound(academy, currentSolution);
+    
+        // Poda: se o lower bound for maior ou igual ao melhor tempo conhecido, não explorar este ramo
+        if (lowerBound >= minTime[0]) {
+            return;
+        }
+    
+        // Se a solução parcial está completa, verifique se ela é ótima
+        if (currentSolution.size() == academy.n) {
+            if (currentElapsed < minTime[0]) {
+                minTime[0] = currentElapsed;
+                optimalSolution.clear();
+                optimalSolution.addAll(currentSolution);
+            }
+            return;
+        }
+    
+        // Obter todos os exercícios disponíveis que ainda não foram alocados na solução
+        List<Exercise> availableExercises = getAvailableExercises(academy, currentSolution);
+    
+        // Ordenar os exercícios com base em uma heurística composta (duração, equipamentos, etc.)
+        Collections.sort(availableExercises, (ex1, ex2) -> {
+            // Critério de ordenação: Duração primeiro, depois equipamento (aluno e equipamento)
+            int durationComparison = Double.compare(ex1.duration, ex2.duration);
+            if (durationComparison != 0) return durationComparison;
+    
+            // Se as durações forem iguais, ordenar pela disponibilidade do equipamento (exemplo: o equipamento mais utilizado primeiro)
+            return Integer.compare(ex1.equipmentId, ex2.equipmentId);
+        });
+    
+        // Explorar os próximos exercícios de cada aluno, ordenados por heurística
+        for (Exercise nextExercise : availableExercises) {
+            // Adiciona o exercício à solução atual
+            currentSolution.add(nextExercise);
+    
+            // Chamada recursiva para explorar o próximo nível
+            exploreBranch(academy, currentSolution, optimalSolution, minTime);
+    
+            // Retroceder: remover o exercício e continuar a exploração
+            currentSolution.remove(currentSolution.size() - 1);
+        }
+    }
+    
+    private static double calculateImprovedLowerBound(Academy academy, List<Exercise> currentSolution) {
+        // Estratégia de lower bound melhorada: soma dos tempos mínimos dos exercícios restantes,
+        // levando em conta a disponibilidade dos equipamentos e a sequência dos alunos
+    
+        double lowerBound = 0.0;
+    
+        // Considerar a disponibilidade dos equipamentos
+        double[] equipmentFreeTimes = new double[academy.M];
+    
+        // Itera sobre os alunos para calcular o tempo mínimo dos exercícios restantes
+        for (Student student : academy.students) {
+            List<Exercise> remainingExercises = new ArrayList<>(student.exercises);
+            remainingExercises.removeAll(currentSolution);
+    
+            // Para cada exercício, calcular o tempo mínimo possível considerando os equipamentos
+            for (Exercise exercise : remainingExercises) {
+                int equipmentId = exercise.equipmentId - 1; // Ajustando o índice do equipamento
+                lowerBound += exercise.duration; // Somando o tempo de duração do exercício
+                equipmentFreeTimes[equipmentId] += exercise.duration; // Simulando a utilização do equipamento
+            }
+        }
+    
+        // Considera o tempo total de uso dos equipamentos como uma parte da estimativa de lower bound
+        double maxEquipmentTime = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
+        lowerBound += maxEquipmentTime;
+    
+        return lowerBound;
+    }
+    
+    private static List<Exercise> getAvailableExercises(Academy academy, List<Exercise> currentSolution) {
+        List<Exercise> availableExercises = new ArrayList<>();
+    
+        // Itera sobre os alunos para pegar os exercícios disponíveis
+        for (Student student : academy.students) {
+            for (Exercise exercise : student.exercises) {
+                if (!currentSolution.contains(exercise)) {
+                    availableExercises.add(exercise);
+                }
+            }
+        }
+    
+        return availableExercises;
+    }     
+
     /**
      * Controls approximate heuristic processing
      *
@@ -173,14 +282,14 @@ public class Main {
 
             if (nextExercise != null) {
                 approximateSolution.add(nextExercise);
-    
+
                 for (List<Exercise> studentExercises : studentsExercices) {
                     if (!studentExercises.isEmpty() && studentExercises.get(0).equals(nextExercise)) {
-                        studentExercises.remove(0); 
+                        studentExercises.remove(0);
                         break;
                     }
                 }
-    
+
                 studentsExercices.removeIf(List::isEmpty);
             }
         }
@@ -256,24 +365,28 @@ public class Main {
      * @return minutes duration in double
      */
     private static double simulateSchedule(int M, List<Exercise> schedule) {
+        if (schedule.isEmpty()) {
+            return 0.0; // Caso não existam exercícios, o tempo total é zero
+        }
+    
         final double[] equipmentFreeTimes = new double[M];
         final Map<Integer, Double> studentsElapsedTimes = new HashMap<>();
-
+    
         for (Exercise exercise : schedule) {
             final int equipmentIdIndex = exercise.equipmentId - 1;
             final double equipmentFreeTime = equipmentFreeTimes[equipmentIdIndex];
             final double studentsElapsedTime = studentsElapsedTimes.getOrDefault(exercise.studentId, 0.0);
             final double startTime = Math.max(equipmentFreeTime, studentsElapsedTime);
             final double finishTime = startTime + exercise.duration;
-
+    
             equipmentFreeTimes[equipmentIdIndex] = finishTime;
-            System.out.println("Equipment " + exercise.equipmentId + " time: " + finishTime + " minutes");
             studentsElapsedTimes.put(exercise.studentId, finishTime);
         }
-
+    
         // Get max elapsed time from students
         return Collections.max(studentsElapsedTimes.values());
     }
+    
 
     public static void main(String[] args) {
         final String filePath = "exercises.txt";
@@ -282,6 +395,7 @@ public class Main {
             final Academy academy = readAcademyDataFromFile(filePath);
             final List<Exercise> optimalBruteForceSolution = handleBruteForcePermutation(academy);
             final List<Exercise> approximateHeuristicSolution = approximateHeuristic(academy);
+            final List<Exercise> branchAndBoundSolution = branchAndBound(academy);
         } catch (IOException e) {
             System.err.println("Error reading the file: " + e.getMessage());
         }
