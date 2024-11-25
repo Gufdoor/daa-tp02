@@ -322,7 +322,6 @@ public class Main {
         }
     }
 
-
     /**
      * Controls brute-force permutation processing
      *
@@ -369,18 +368,18 @@ public class Main {
         final List<Exercise> currentSolution = new ArrayList<>();
         final double[] minTime = {Double.MAX_VALUE};
         final double[] equipmentFreeTimes = new double[academy.M];
-
         final Map<Integer, Double> studentsElapsedTimes = new HashMap<>();
-
         final Map<Integer, Integer> studentProgress = new HashMap<>();
+
         for (Student student : academy.students) {
             studentProgress.put(student.studentId, 0);
         }
 
         exploreBranch(academy, currentSolution, optimalBranchAndBoundSolution, minTime, equipmentFreeTimes, studentsElapsedTimes, studentProgress);
 
-        System.out.printf("Branch-and-Bound Lowest time: %.2f minutes%n", minTime[0]);
-        System.out.println("Optimal sequence solution:");
+        System.out.printf("%nBranch-and-Bound Lowest time: %.2f minutes%n", minTime[0]);
+        System.out.println("Optimal Branch-and-Bound sequence solution:");
+
         for (Exercise exercise : optimalBranchAndBoundSolution) {
             System.out.println(exercise);
         }
@@ -391,25 +390,23 @@ public class Main {
     /**
      * Recursively explores branches of the solution tree for the Branch-And-Bound algorithm.
      *
-     * @param academy         receives an Academy object generated from the read file
-     * @param currentSolution the current partial solution being explored
+     * @param academy                       receives an Academy object generated from the read file
+     * @param currentSolution               the current partial solution being explored
      * @param optimalBranchAndBoundSolution the list that stores the best solution found so far
-     * @param minTime         an array containing the minimum time found so far, updated during the process
-     * @param equipmentFreeTimes   an array representing the availability of each piece of equipment
-     * @param studentsElapsedTimes a map tracking the elapsed time for each student
-     * @param studentProgress      a map tracking the current progress of each student (index of their next exercise)
+     * @param minTime                       an array containing the minimum time found so far, updated during the process
+     * @param equipmentFreeTimes            an array representing the availability of each piece of equipment
+     * @param studentsElapsedTimes          a map tracking the elapsed time for each student
+     * @param studentProgress               a map tracking the current progress of each student (index of their next exercise)
      */
     private static void exploreBranch(Academy academy, List<Exercise> currentSolution, List<Exercise> optimalBranchAndBoundSolution,
                                       double[] minTime, double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
                                       Map<Integer, Integer> studentProgress) {
         final double currentElapsed = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
-
         final double lowerBound = calculateLowerBound(
                 academy, currentSolution, equipmentFreeTimes, studentsElapsedTimes, studentProgress);
 
-        if (lowerBound >= minTime[0]) {
+        if (lowerBound >= minTime[0])
             return;
-        }
 
         if (currentSolution.size() == academy.n) {
             if (currentElapsed < minTime[0]) {
@@ -417,11 +414,12 @@ public class Main {
                 optimalBranchAndBoundSolution.clear();
                 optimalBranchAndBoundSolution.addAll(currentSolution);
             }
+
             return;
         }
 
         for (Student student : academy.students) {
-            int progressIndex = studentProgress.get(student.studentId);
+            final int progressIndex = studentProgress.get(student.studentId);
 
             if (progressIndex >= student.exercises.size()) {
                 continue;
@@ -430,10 +428,8 @@ public class Main {
             Exercise nextExercise = student.exercises.get(progressIndex);
 
             int equipmentIdx = nextExercise.equipmentId - 1;
-
             double prevEquipmentTime = equipmentFreeTimes[equipmentIdx];
             double prevStudentTime = studentsElapsedTimes.getOrDefault(nextExercise.studentId, 0.0);
-
             double startTime = Math.max(prevEquipmentTime, prevStudentTime);
             double finishTime = startTime + nextExercise.duration;
 
@@ -446,7 +442,7 @@ public class Main {
                     academy, currentSolution, optimalBranchAndBoundSolution, minTime,
                     equipmentFreeTimes, studentsElapsedTimes, studentProgress);
 
-            //(backtracking)
+            // Execute backtracking
             equipmentFreeTimes[equipmentIdx] = prevEquipmentTime;
             studentsElapsedTimes.put(nextExercise.studentId, prevStudentTime);
             currentSolution.remove(currentSolution.size() - 1);
@@ -457,11 +453,11 @@ public class Main {
     /**
      * Calculates an improved lower bound for the Branch-And-Bound algorithm
      *
-     * @param academy         receives an Academy object generated from the read file
-     * @param currentSolution the current partial solution being evaluated
-     * @param equipmentFreeTimes an array representing the availability of each piece of equipment
+     * @param academy              receives an Academy object generated from the read file
+     * @param currentSolution      the current partial solution being evaluated
+     * @param equipmentFreeTimes   an array representing the availability of each piece of equipment
      * @param studentsElapsedTimes a map tracking the elapsed time for each student
-     * @param studentProgress      a map tracking the current progress of each student (index of their next exercise) 
+     * @param studentProgress      a map tracking the current progress of each student (index of their next exercise)
      * @return the lower bound estimate as a double value
      */
     private static double calculateLowerBound(Academy academy, List<Exercise> currentSolution,
@@ -474,13 +470,12 @@ public class Main {
             final int progressIndex = studentProgress.get(student.studentId);
 
             for (int i = progressIndex; i < student.exercises.size(); i++) {
-                Exercise exercise = student.exercises.get(i);
-
+                final Exercise exercise = student.exercises.get(i);
                 final int equipmentIdx = exercise.equipmentId - 1;
                 final double equipmentTime = equipmentFreeTimes[equipmentIdx];
                 final double studentTime = studentsElapsedTimes.getOrDefault(student.studentId, 0.0);
-
                 final double estimatedStartTime = Math.max(equipmentTime, studentTime);
+
                 lowerBound = Math.max(lowerBound, estimatedStartTime + exercise.duration);
             }
         }
@@ -587,8 +582,9 @@ public class Main {
             final List<Exercise> branchAndBoundSolution = handleBranchAndBound(academy);
             final ChartPanel bruteForceChart = ChartPlotter.handleGanttChart("Brute-Force Solution", bruteForceSolution);
             final ChartPanel heuristicChart = ChartPlotter.handleGanttChart("Approximate Heuristic Solution", approximateHeuristicSolution);
-            final List<String> chartTabTitles = Arrays.asList("Brute-Force", "Approximate Heuristic");
-            final List<ChartPanel> chartPanels = Arrays.asList(bruteForceChart, heuristicChart);
+            final ChartPanel branchBoundChart = ChartPlotter.handleGanttChart("Branch and Bound Solution", branchAndBoundSolution);
+            final List<String> chartTabTitles = Arrays.asList("Brute-Force", "Approximate Heuristic", "Branch and Bound");
+            final List<ChartPanel> chartPanels = Arrays.asList(bruteForceChart, heuristicChart, branchBoundChart);
 
             ChartPlotter.plotGanttChart(chartTabTitles, chartPanels);
         } catch (IOException e) {
