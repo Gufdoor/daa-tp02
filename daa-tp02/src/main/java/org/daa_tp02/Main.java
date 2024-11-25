@@ -522,54 +522,56 @@ public class Main {
      */
     private static List<Exercise> approximateHeuristic(Academy academy) {
         final List<List<Exercise>> studentsExercises = new ArrayList<>();
-
+    
         for (Student student : academy.students) {
             studentsExercises.add(new ArrayList<>(student.exercises));
         }
-
+    
         final List<Exercise> approximateSolution = new ArrayList<>();
-        double minTime = 0;
-
+    
         while (!studentsExercises.isEmpty()) {
             Exercise nextExercise = null;
-            minTime = Double.MAX_VALUE;
-
+            double bestElapsedTime = Double.MAX_VALUE;
+    
             for (List<Exercise> studentExercises : studentsExercises) {
                 if (studentExercises.isEmpty())
                     continue;
-
+    
                 final Exercise exercise = studentExercises.get(0);
                 final double elapsed = handleApproximateHeuristicSchedule(academy.M, approximateSolution, exercise);
-
-                if (elapsed < minTime) {
-                    minTime = elapsed;
+    
+                if (elapsed < bestElapsedTime) {
+                    bestElapsedTime = elapsed;
                     nextExercise = exercise;
                 }
             }
-
+    
             if (nextExercise != null) {
                 approximateSolution.add(nextExercise);
-
+    
                 for (List<Exercise> studentExercises : studentsExercises) {
                     if (!studentExercises.isEmpty() && studentExercises.get(0).equals(nextExercise)) {
                         studentExercises.remove(0);
-
                         break;
                     }
                 }
-
+    
                 studentsExercises.removeIf(List::isEmpty);
             }
         }
-
-        System.out.printf("%nLowest time: %.2f minutes%n", minTime);
+    
+        // Recalcular o tempo total para a solução final
+        final double totalElapsedTime = simulateSchedule(academy.M, approximateSolution);
+    
+        System.out.printf("%nLowest time: %.2f minutes%n", totalElapsedTime);
         System.out.println("Optimal Approximate Heuristic sequence solution:");
-
+    
         for (Exercise exercise : approximateSolution)
             System.out.println(exercise);
-
+    
         return approximateSolution;
     }
+    
     //endregion
 
     public static void main(String[] args) {
