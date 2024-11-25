@@ -75,25 +75,39 @@ public class Main {
         /**
          * Handles a Gantt chart plot, managing its data and also the window in which it'll be rendered.
          *
-         * @param title    JFrame window title
-         * @param solution solution containing an ordered exercise object list
+         * @param charts list of build Gantt charts
          */
-        public static void plotGanttChart(String title, List<Exercise> solution) {
+        public static void plotGanttChart(List<String> titles, List<ChartPanel> charts) {
             SwingUtilities.invokeLater(() -> {
-                final JFrame chartFrame = new JFrame("DAA TP02");
-                final IntervalCategoryDataset dataset = createDataset(solution);
-                final JFreeChart chart = createChart(title, dataset);
+                final JFrame frame = new JFrame("DAA TP02");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                frame.setSize(1000, 600);
+                frame.setLocationRelativeTo(null);
 
-                customizeChart(chart);
+                final JTabbedPane tabbedPane = new JTabbedPane();
 
-                final ChartPanel panel = new ChartPanel(chart);
+                for (int i = 0; i < titles.size(); i++)
+                    tabbedPane.addTab(titles.get(i), charts.get(i));
 
-                chartFrame.setContentPane(panel);
-                chartFrame.setSize(800, 400);
-                chartFrame.setLocationRelativeTo(null);
-                chartFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-                chartFrame.setVisible(true);
+                frame.add(tabbedPane);
+                frame.setVisible(true);
             });
+        }
+
+        /**
+         * Handles a Gantt chart plot and returns its ChartPanel for embedding.
+         *
+         * @param title    The title of the chart
+         * @param solution The solution containing an ordered exercise object list
+         * @return A ChartPanel containing the Gantt chart
+         */
+        public static ChartPanel handleGanttChart(String title, List<Exercise> solution) {
+            final IntervalCategoryDataset dataset = createDataset(solution);
+            final JFreeChart chart = createChart(title, dataset);
+
+            customizeChart(chart);
+
+            return new ChartPanel(chart);
         }
 
         /**
@@ -343,6 +357,7 @@ public class Main {
     //endregion
 
     //region Approximate Heuristic Schedule
+
     /**
      * Simulates the scheduling of exercises for all students and equipment.
      * It calculates the total time taken for a given schedule of exercises,
@@ -434,9 +449,14 @@ public class Main {
                 throw new IllegalArgumentException("The number of equipment must be greater than 0");
             }
 
-            final List<Exercise> optimalBruteForceSolution = handleBruteForcePermutation(academy);
+            final List<Exercise> bruteForceSolution = handleBruteForcePermutation(academy);
             final List<Exercise> approximateHeuristicSolution = approximateHeuristic(academy);
-            ChartPlotter.plotGanttChart("Academy Brute-Force Solution", optimalBruteForceSolution);
+            final ChartPanel bruteForceChart = ChartPlotter.handleGanttChart("Brute-Force Solution", bruteForceSolution);
+            final ChartPanel heuristicChart = ChartPlotter.handleGanttChart("Approximate Heuristic Solution", approximateHeuristicSolution);
+            final List<String> chartTabTitles = Arrays.asList("Brute-Force", "Approximate Heuristic");
+            final List<ChartPanel> chartPanels = Arrays.asList(bruteForceChart, heuristicChart);
+
+            ChartPlotter.plotGanttChart(chartTabTitles, chartPanels);
         } catch (IOException e) {
             System.err.println("Error reading the file: " + e.getMessage());
         }
