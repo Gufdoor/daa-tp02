@@ -1,11 +1,25 @@
 package org.daa_tp02;
 
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.renderer.category.GanttRenderer;
+import org.jfree.data.category.IntervalCategoryDataset;
+import org.jfree.data.gantt.Task;
+import org.jfree.data.gantt.TaskSeries;
+import org.jfree.data.gantt.TaskSeriesCollection;
+
+import javax.swing.*;
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.List;
 import java.util.*;
 
 public class Main {
+    //region Objects
     private static class Academy {
         int M; // Equipment count
         int N; // Student count
@@ -42,6 +56,7 @@ public class Main {
         int studentId;
         int equipmentId;
         double duration; // In minutes
+        double startTime;
 
         public Exercise(int studentId, int equipmentId, double duration) {
             this.studentId = studentId;
@@ -55,6 +70,143 @@ public class Main {
                     + duration;
         }
     }
+
+    private static class ChartPlotter {
+        /**
+         * Handles a Gantt chart plot, managing its data and also the window in which it'll be rendered.
+         *
+         * @param charts list of build Gantt charts
+         */
+        public static void plotGanttChart(List<String> titles, List<ChartPanel> charts) {
+            SwingUtilities.invokeLater(() -> {
+                final JFrame frame = new JFrame("DAA TP02");
+                frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                frame.setSize(1000, 600);
+                frame.setLocationRelativeTo(null);
+
+                final JTabbedPane tabbedPane = new JTabbedPane();
+
+                for (int i = 0; i < titles.size(); i++)
+                    tabbedPane.addTab(titles.get(i), charts.get(i));
+
+                frame.add(tabbedPane);
+                frame.setVisible(true);
+            });
+        }
+
+        /**
+         * Handles a Gantt chart plot and returns its ChartPanel for embedding.
+         *
+         * @param title    The title of the chart
+         * @param solution The solution containing an ordered exercise object list
+         * @return A ChartPanel containing the Gantt chart
+         */
+        public static ChartPanel handleGanttChart(String title, List<Exercise> solution) {
+            final IntervalCategoryDataset dataset = createDataset(solution);
+            final JFreeChart chart = createChart(title, dataset);
+
+            customizeChart(chart);
+
+            return new ChartPanel(chart);
+        }
+
+        /**
+         * Manage an exercise object list to create the necessary data to render a Gantt chart.
+         *
+         * @param solution solution containing an ordered exercise object list
+         */
+        private static IntervalCategoryDataset createDataset(List<Exercise> solution) {
+            final TaskSeriesCollection dataset = new TaskSeriesCollection();
+            final Map<Integer, TaskSeries> studentsSeriesMap = new HashMap<>();
+
+            for (Exercise exercise : solution) {
+                studentsSeriesMap.putIfAbsent(exercise.studentId, new TaskSeries("Student " + exercise.studentId));
+
+                final TaskSeries series = studentsSeriesMap.get(exercise.studentId);
+                final Date startDate = parseMinutesToDate(exercise.startTime);
+                final Date endDate = parseMinutesToDate(exercise.startTime + exercise.duration);
+
+                series.add(new Task("Equipment " + exercise.equipmentId, startDate, endDate));
+            }
+
+            studentsSeriesMap.values().forEach(dataset::add);
+
+            return dataset;
+        }
+
+        /**
+         * Creates a Gantt chart with the provided arguments.
+         *
+         * @param title   defined chart title
+         * @param dataset chart data to be rendered
+         */
+        private static JFreeChart createChart(String title, IntervalCategoryDataset dataset) {
+            return ChartFactory.createGanttChart(
+                    title,
+                    "Equipments",
+                    "Elapsed Time (minutes)",
+                    dataset
+            );
+        }
+
+        /**
+         * Receives a Gantt and customizes its series colours. This way we can represents each student by different
+         * colours.
+         *
+         * @param chart Gantt chart already created
+         */
+        private static void customizeChart(JFreeChart chart) {
+            final int seriesCount = chart.getCategoryPlot().getDataset().getRowCount();
+            final GanttRenderer renderer = new GanttRenderer();
+
+            for (int i = 0; i < seriesCount; i++) {
+                renderer.setSeriesPaint(i, generateRandomColor());
+            }
+
+            final CategoryPlot plot = chart.getCategoryPlot();
+            plot.setRenderer(renderer);
+        }
+
+        /**
+         * Generates a random color.
+         *
+         * @return a random Color object
+         */
+        private static Color generateRandomColor() {
+            final Random random = new Random();
+            final int bound = 256;
+
+            final int red = random.nextInt(bound);
+            final int green = random.nextInt(bound);
+            final int blue = random.nextInt(bound);
+
+            return new Color(red, green, blue);
+        }
+
+        /**
+         * Parse any minutes count to Date type starting from 0. This is expected to create a date that represents
+         * an elapsed time in minutes.
+         *
+         * @param minutes minutes count
+         * @return minutes converted into Date (year 0, month 0, day 0, x hour, x minute)
+         */
+        private static Date parseMinutesToDate(double minutes) {
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(Calendar.YEAR, 1);
+            calendar.set(Calendar.MONTH, Calendar.JANUARY);
+            calendar.set(Calendar.DAY_OF_MONTH, 1);
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+            calendar.add(Calendar.MINUTE, (int) minutes);
+
+            return calendar.getTime();
+        }
+    }
+    //endregion
+
+    //region File reading
 
     /**
      * Reads the input file and parses it into an Academy object.
@@ -107,6 +259,69 @@ public class Main {
 
         return new Exercise(studentId, equipmentId, duration);
     }
+    //endregion
+
+    /**
+     * Calculates the duration time for a given permutation.
+     *
+     * @param M        an academy equipments count
+     * @param schedule exercises list from a permutation
+     * @return minutes duration in double
+     */
+    private static double simulateSchedule(int M, List<Exercise> schedule) {
+        final double[] equipmentFreeTimes = new double[M];
+        final Map<Integer, Double> studentsElapsedTimes = new HashMap<>();
+
+        for (Exercise exercise : schedule) {
+            final int equipmentIdIndex = exercise.equipmentId - 1;
+            final double equipmentFreeTime = equipmentFreeTimes[equipmentIdIndex];
+            final double studentsElapsedTime = studentsElapsedTimes.getOrDefault(exercise.studentId, 0.0);
+            final double startTime = Math.max(equipmentFreeTime, studentsElapsedTime);
+            exercise.startTime = startTime;
+            final double finishTime = startTime + exercise.duration;
+
+            equipmentFreeTimes[equipmentIdIndex] = finishTime;
+            System.out.println("Equipment " + exercise.equipmentId + " time: " + finishTime + " minutes");
+            studentsElapsedTimes.put(exercise.studentId, finishTime);
+        }
+
+        // Get max elapsed time from students
+        return Collections.max(studentsElapsedTimes.values());
+    }
+
+    //region Brute Force Permutation
+
+    /**
+     * For a given group of exercises, process all combinations possible, respecting
+     * that each student must complete
+     * its exercises sequence in order.
+     *
+     * @param students        a list of Students objects containing all exercises
+     *                        sequences
+     * @param stepPermutation current permutation recursion step
+     * @param permutations    result permutations
+     */
+    private static void generateBruteForcePermutations(List<Student> students, List<Exercise> stepPermutation,
+                                                       List<List<Exercise>> permutations) {
+        if (students.isEmpty()) {
+            permutations.add(new ArrayList<>(stepPermutation));
+
+            return;
+        }
+
+        for (Student student : students) {
+            final List<Exercise> exercises = student.exercises;
+            // Remaining students exercises to process
+            final List<Student> remainingStudents = new ArrayList<>(students);
+
+            remainingStudents.remove(student);
+            stepPermutation.addAll(exercises);
+            generateBruteForcePermutations(remainingStudents, stepPermutation, permutations);
+            // Remove changes to current permutation and continue to next student
+            stepPermutation.subList(stepPermutation.size() - exercises.size(), stepPermutation.size()).clear();
+        }
+    }
+
 
     /**
      * Controls brute-force permutation processing
@@ -116,7 +331,7 @@ public class Main {
      */
     private static List<Exercise> handleBruteForcePermutation(Academy academy) {
         final List<List<Exercise>> permutations = new ArrayList<>();
-        generatePermutations(academy.students, new ArrayList<>(), permutations);
+        generateBruteForcePermutations(academy.students, new ArrayList<>(), permutations);
         System.out.println("Generate permutations count: " + permutations.size());
 
         double minTime = Double.MAX_VALUE;
@@ -131,14 +346,15 @@ public class Main {
             }
         }
 
-        System.out.printf("Lowest time: %.2f minutes%n", minTime);
-        System.out.println("Optimal sequence solution:");
+        System.out.printf("%nLowest time: %.2f minutes%n", minTime);
+        System.out.println("%nOptimal Brute Force sequence solution:");
 
         for (Exercise exercise : optimalBruteForceSolution)
             System.out.println(exercise);
 
         return optimalBruteForceSolution;
     }
+    //endregion
 
     /**
      * Controls Branch-And-Bound processing
@@ -156,7 +372,7 @@ public class Main {
 
         Map<Integer, Integer> studentProgress = new HashMap<>();
         for (Student student : academy.students) {
-            studentProgress.put(student.studentId, 0); 
+            studentProgress.put(student.studentId, 0);
         }
 
         exploreBranch(academy, currentSolution, optimalBranchAndBoundSolution, minTime, equipmentFreeTimes, studentsElapsedTimes, studentProgress);
@@ -178,9 +394,9 @@ public class Main {
      * @param optimalBranchAndBoundSolution the list that stores the best solution found so far
      * @param minTime         an array containing the minimum time found so far, updated during the process
      */
-    private static void exploreBranch( Academy academy, List<Exercise> currentSolution, List<Exercise> optimalSolution, 
-                            double[] minTime,double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes, 
-                            Map<Integer, Integer> studentProgress) {
+    private static void exploreBranch( Academy academy, List<Exercise> currentSolution, List<Exercise> optimalSolution,
+                                       double[] minTime,double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
+                                       Map<Integer, Integer> studentProgress) {
         double currentElapsed = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
 
         double lowerBound = calculateLowerBound(
@@ -244,8 +460,8 @@ public class Main {
      * @return the lower bound estimate as a double value
      */
     private static double calculateLowerBound( Academy academy, List<Exercise> currentSolution,
-                                    double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
-                                    Map<Integer, Integer> studentProgress) {
+                                               double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
+                                               Map<Integer, Integer> studentProgress) {
 
         double lowerBound = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
 
@@ -267,6 +483,31 @@ public class Main {
         return lowerBound;
     }
 
+    //region Approximate Heuristic
+
+    /**
+     * Simulates the scheduling of exercises for all students and equipment.
+     * It calculates the total time taken for a given schedule of exercises,
+     * considering the availability
+     * of each equipment and the completion times for each student.
+     *
+     * @param M               the number of academy equipments
+     * @param currentSchedule a list of exercises representing the sequence in which tasks
+     *                        are performed
+     * @param nextExercise    next exercise object on the queue to be processed
+     * @return the total duration in minutes (double) when all exercises are
+     * completed
+     */
+    private static double handleApproximateHeuristicSchedule(int M, List<Exercise> currentSchedule, Exercise nextExercise) {
+        final List<Exercise> timeSchedule = new ArrayList<>(currentSchedule);
+
+        timeSchedule.add(nextExercise);
+
+        final double timeSimulated = simulateSchedule(M, timeSchedule);
+
+        return timeSimulated - nextExercise.duration;
+    }
+
     /**
      * Controls approximate heuristic processing
      *
@@ -274,24 +515,26 @@ public class Main {
      * @return a list of exercises that represents the optimal solution
      */
     private static List<Exercise> approximateHeuristic(Academy academy) {
-        List<List<Exercise>> studentsExercices = new ArrayList<>();
+        final List<List<Exercise>> studentsExercises = new ArrayList<>();
+
         for (Student student : academy.students) {
-            studentsExercices.add(new ArrayList<>(student.exercises));
+            studentsExercises.add(new ArrayList<>(student.exercises));
         }
 
-        List<Exercise> approximateSolution = new ArrayList<>();
+        final List<Exercise> approximateSolution = new ArrayList<>();
         double minTime = 0;
 
-        while (!studentsExercices.isEmpty()) {
+        while (!studentsExercises.isEmpty()) {
             Exercise nextExercise = null;
             minTime = Double.MAX_VALUE;
 
-            for (List<Exercise> studentExercises : studentsExercices) {
+            for (List<Exercise> studentExercises : studentsExercises) {
                 if (studentExercises.isEmpty())
                     continue;
 
-                Exercise exercise = studentExercises.get(0);
-                double elapsed = simulateScheduleForExercise(academy.M, approximateSolution, exercise);
+                final Exercise exercise = studentExercises.get(0);
+                final double elapsed = handleApproximateHeuristicSchedule(academy.M, approximateSolution, exercise);
+
                 if (elapsed < minTime) {
                     minTime = elapsed;
                     nextExercise = exercise;
@@ -301,118 +544,47 @@ public class Main {
             if (nextExercise != null) {
                 approximateSolution.add(nextExercise);
 
-                for (List<Exercise> studentExercises : studentsExercices) {
+                for (List<Exercise> studentExercises : studentsExercises) {
                     if (!studentExercises.isEmpty() && studentExercises.get(0).equals(nextExercise)) {
                         studentExercises.remove(0);
+
                         break;
                     }
                 }
 
-                studentsExercices.removeIf(List::isEmpty);
+                studentsExercises.removeIf(List::isEmpty);
             }
         }
 
-        System.out.printf("Lowest time: %.2f minutes%n", minTime);
-        System.out.println("Optimal sequence solution:");
+        System.out.printf("%nLowest time: %.2f minutes%n", minTime);
+        System.out.println("Optimal Approximate Heuristic sequence solution:");
+
         for (Exercise exercise : approximateSolution)
             System.out.println(exercise);
 
         return approximateSolution;
     }
-
-    /**
-     * Simulates the scheduling of exercises for all students and equipment.
-     * It calculates the total time taken for a given schedule of exercises,
-     * considering the availability
-     * of each equipment and the completion times for each student.
-     *
-     * @param M        the number of academy equipments
-     * @param schedule a list of exercises representing the sequence in which tasks
-     *                 are performed
-     * @return the total duration in minutes (double) when all exercises are
-     *         completed
-     */
-    private static double simulateScheduleForExercise(int M, List<Exercise> currentSchedule, Exercise nextExercise) {
-        if (M <= 0) {
-            throw new IllegalArgumentException("The number of equipment must be greater than 0");
-        }
-
-        List<Exercise> timeSchedule = new ArrayList<>(currentSchedule);
-        timeSchedule.add(nextExercise);
-        final double timeSimulated = simulateSchedule(M, timeSchedule);
-
-        return timeSimulated - nextExercise.duration;
-    }
-
-    /**
-     * For a given group of exercises, process all combinations possible, respecting
-     * that each student must complete
-     * its exercises sequence in order.
-     *
-     * @param students        a list of Students objects containing all exercises
-     *                        sequences
-     * @param stepPermutation current permutation recursion step
-     * @param permutations    result permutations
-     */
-    private static void generatePermutations(List<Student> students, List<Exercise> stepPermutation,
-            List<List<Exercise>> permutations) {
-        if (students.isEmpty()) {
-            permutations.add(new ArrayList<>(stepPermutation));
-
-            return;
-        }
-
-        for (Student student : students) {
-            final List<Exercise> exercises = student.exercises;
-            // Remaining students exercises to process
-            final List<Student> remainingStudents = new ArrayList<>(students);
-
-            remainingStudents.remove(student);
-            stepPermutation.addAll(exercises);
-            generatePermutations(remainingStudents, stepPermutation, permutations);
-            // Remove changes to current permutation and continue to next student
-            stepPermutation.subList(stepPermutation.size() - exercises.size(), stepPermutation.size()).clear();
-        }
-    }
-
-    /**
-     * Calculates the duration time for a given permutation.
-     *
-     * @param M        an academy equipments count
-     * @param schedule exercises list from a permutation
-     * @return minutes duration in double
-     */
-    private static double simulateSchedule(int M, List<Exercise> schedule) {
-        if (schedule.isEmpty()) {
-            return 0.0; // Caso não existam exercícios, o tempo total é zero
-        }
-
-        final double[] equipmentFreeTimes = new double[M];
-        final Map<Integer, Double> studentsElapsedTimes = new HashMap<>();
-
-        for (Exercise exercise : schedule) {
-            final int equipmentIdIndex = exercise.equipmentId - 1;
-            final double equipmentFreeTime = equipmentFreeTimes[equipmentIdIndex];
-            final double studentsElapsedTime = studentsElapsedTimes.getOrDefault(exercise.studentId, 0.0);
-            final double startTime = Math.max(equipmentFreeTime, studentsElapsedTime);
-            final double finishTime = startTime + exercise.duration;
-
-            equipmentFreeTimes[equipmentIdIndex] = finishTime;
-            studentsElapsedTimes.put(exercise.studentId, finishTime);
-        }
-
-        // Get max elapsed time from students
-        return Collections.max(studentsElapsedTimes.values());
-    }
+    //endregion
 
     public static void main(String[] args) {
         final String filePath = "exercises.txt";
 
         try {
             final Academy academy = readAcademyDataFromFile(filePath);
-            final List<Exercise> optimalBruteForceSolution = handleBruteForcePermutation(academy);
+
+            if (academy.M <= 0) {
+                throw new IllegalArgumentException("The number of equipment must be greater than 0");
+            }
+
+            final List<Exercise> bruteForceSolution = handleBruteForcePermutation(academy);
             final List<Exercise> approximateHeuristicSolution = approximateHeuristic(academy);
             final List<Exercise> branchAndBoundSolution = handlebranchAndBound(academy);
+            final ChartPanel bruteForceChart = ChartPlotter.handleGanttChart("Brute-Force Solution", bruteForceSolution);
+            final ChartPanel heuristicChart = ChartPlotter.handleGanttChart("Approximate Heuristic Solution", approximateHeuristicSolution);
+            final List<String> chartTabTitles = Arrays.asList("Brute-Force", "Approximate Heuristic");
+            final List<ChartPanel> chartPanels = Arrays.asList(bruteForceChart, heuristicChart);
+
+            ChartPlotter.plotGanttChart(chartTabTitles, chartPanels);
         } catch (IOException e) {
             System.err.println("Error reading the file: " + e.getMessage());
         }
