@@ -174,15 +174,13 @@ public class Main {
             if (nextExercise != null) {
                 approximateSolution.add(nextExercise);
     
-                // Remove o exercício escolhido da lista do aluno
                 for (List<Exercise> studentExercises : studentsExercices) {
                     if (!studentExercises.isEmpty() && studentExercises.get(0).equals(nextExercise)) {
-                        studentExercises.remove(0); // Remove o exercício da lista
+                        studentExercises.remove(0); 
                         break;
                     }
                 }
     
-                // Remover a lista do aluno se todos os exercícios dele foram processados
                 studentsExercices.removeIf(List::isEmpty);
             }
         }
