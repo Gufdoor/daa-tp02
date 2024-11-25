@@ -11,6 +11,7 @@ text file. The first 3 lines contain the values of M, N and n. Next, each studen
 each student, each exercise on one line, with the student's enrolment, equipment number and exercise duration in
 number and the duration of the exercise in minutes. Input file example:
 
+```
 M=6
 N=4
 n=11
@@ -25,3 +26,4 @@ n=11
 3 5 30.0
 4 3 5.0
 4 4 10.5
+```
