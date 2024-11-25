@@ -281,19 +281,19 @@ public class Main {
      * @return a list of exercises that represents the optimal solution
      */
     private static List<Exercise> approximateHeuristic(Academy academy) {
-        List<List<Exercise>> studentsExercices = new ArrayList<>();
+        List<List<Exercise>> studentsExercises = new ArrayList<>();
         for (Student student : academy.students) {
-            studentsExercices.add(new ArrayList<>(student.exercises));
+            studentsExercises.add(new ArrayList<>(student.exercises));
         }
 
         List<Exercise> approximateSolution = new ArrayList<>();
         double minTime = 0;
 
-        while (!studentsExercices.isEmpty()) {
+        while (!studentsExercises.isEmpty()) {
             Exercise nextExercise = null;
             minTime = Double.MAX_VALUE;
 
-            for (List<Exercise> studentExercises : studentsExercices) {
+            for (List<Exercise> studentExercises : studentsExercises) {
                 if (studentExercises.isEmpty())
                     continue;
 
@@ -308,14 +308,14 @@ public class Main {
             if (nextExercise != null) {
                 approximateSolution.add(nextExercise);
 
-                for (List<Exercise> studentExercises : studentsExercices) {
+                for (List<Exercise> studentExercises : studentsExercises) {
                     if (!studentExercises.isEmpty() && studentExercises.get(0).equals(nextExercise)) {
                         studentExercises.remove(0);
                         break;
                     }
                 }
 
-                studentsExercices.removeIf(List::isEmpty);
+                studentsExercises.removeIf(List::isEmpty);
             }
         }
 
@@ -333,19 +333,18 @@ public class Main {
      * considering the availability
      * of each equipment and the completion times for each student.
      *
-     * @param M        the number of academy equipments
-     * @param schedule a list of exercises representing the sequence in which tasks
-     *                 are performed
+     * @param M               the number of academy equipments
+     * @param currentSchedule a list of exercises representing the sequence in which tasks
+     *                        are performed
+     * @param nextExercise    next exercise object on the queue to be processed
      * @return the total duration in minutes (double) when all exercises are
-     *         completed
+     * completed
      */
     private static double simulateScheduleForExercise(int M, List<Exercise> currentSchedule, Exercise nextExercise) {
-        if (M <= 0) {
-            throw new IllegalArgumentException("The number of equipment must be greater than 0");
-        }
+        final List<Exercise> timeSchedule = new ArrayList<>(currentSchedule);
 
-        List<Exercise> timeSchedule = new ArrayList<>(currentSchedule);
         timeSchedule.add(nextExercise);
+
         final double timeSimulated = simulateSchedule(M, timeSchedule);
 
         return timeSimulated - nextExercise.duration;
@@ -362,7 +361,7 @@ public class Main {
      * @param permutations    result permutations
      */
     private static void generatePermutations(List<Student> students, List<Exercise> stepPermutation,
-            List<List<Exercise>> permutations) {
+                                             List<List<Exercise>> permutations) {
         if (students.isEmpty()) {
             permutations.add(new ArrayList<>(stepPermutation));
 
@@ -415,6 +414,11 @@ public class Main {
 
         try {
             final Academy academy = readAcademyDataFromFile(filePath);
+
+            if (academy.M <= 0) {
+                throw new IllegalArgumentException("The number of equipment must be greater than 0");
+            }
+
             final List<Exercise> optimalBruteForceSolution = handleBruteForcePermutation(academy);
             final List<Exercise> approximateHeuristicSolution = approximateHeuristic(academy);
             ChartPlotter.plotGanttChart("Academy Brute-Force Solution", optimalBruteForceSolution);
