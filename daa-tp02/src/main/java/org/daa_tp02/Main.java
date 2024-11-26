@@ -317,7 +317,7 @@ public class Main {
     private static double simulateSchedule(int M, List<Exercise> schedule) {
         final double[] equipmentFreeTimes = new double[M];
         final Map<Integer, Double> studentsElapsedTimes = new HashMap<>();
-
+    
         for (Exercise exercise : schedule) {
             final int equipmentIdIndex = exercise.equipmentId - 1;
             final double equipmentFreeTime = equipmentFreeTimes[equipmentIdIndex];
@@ -325,14 +325,20 @@ public class Main {
             final double startTime = Math.max(equipmentFreeTime, studentsElapsedTime);
             exercise.startTime = startTime;
             final double finishTime = startTime + exercise.duration;
-
+    
             equipmentFreeTimes[equipmentIdIndex] = finishTime;
             studentsElapsedTimes.put(exercise.studentId, finishTime);
         }
-
-        // Get max elapsed time from students
+    
+        // Verifica se o mapa não está vazio antes de chamar Collections.max
+        if (studentsElapsedTimes.isEmpty()) {
+            return 0.0; // Se não houver estudantes, o tempo de execução é 0
+        }
+    
+        // Retorna o maior tempo entre os estudantes
         return Collections.max(studentsElapsedTimes.values());
     }
+    
 
     // region Brute Force Permutation
 
@@ -455,54 +461,73 @@ public class Main {
             List<Exercise> optimalBranchAndBoundSolution,
             double[] minTime, double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
             Map<Integer, Integer> studentProgress) {
-        final double currentElapsed = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
-        final double lowerBound = calculateLowerBound(
+
+        // Calcula o tempo atual de execução para a solução parcial usando a simulação de agendamento
+        double currentElapsed = simulateSchedule(academy.M, currentSolution);
+        
+        // Calcula o lower bound para a solução parcial
+        double lowerBound = calculateLowerBound(
                 academy, currentSolution, equipmentFreeTimes, studentsElapsedTimes, studentProgress);
 
-        if (lowerBound >= minTime[0])
+        // Poda: Se o lower bound for maior ou igual ao menor tempo conhecido, descarta
+        if (lowerBound >= minTime[0]) {
             return;
+        }
 
+        // Verifica se todos os exercícios foram alocados
         if (currentSolution.size() == academy.n) {
             if (currentElapsed < minTime[0]) {
                 minTime[0] = currentElapsed;
                 optimalBranchAndBoundSolution.clear();
                 optimalBranchAndBoundSolution.addAll(currentSolution);
             }
-
             return;
         }
 
+        // Explora os próximos exercícios possíveis
         for (Student student : academy.students) {
             final int progressIndex = studentProgress.get(student.studentId);
 
+            // Se o aluno já completou todos os exercícios, pula para o próximo
             if (progressIndex >= student.exercises.size()) {
                 continue;
             }
 
             Exercise nextExercise = student.exercises.get(progressIndex);
-
             int equipmentIdx = nextExercise.equipmentId - 1;
+
+            // Calcula os tempos atuais do equipamento e do estudante
             double prevEquipmentTime = equipmentFreeTimes[equipmentIdx];
             double prevStudentTime = studentsElapsedTimes.getOrDefault(nextExercise.studentId, 0.0);
+
+            // Calcula o início do exercício, respeitando os horários
             double startTime = Math.max(prevEquipmentTime, prevStudentTime);
             double finishTime = startTime + nextExercise.duration;
 
+            // Verifica se há conflito no uso do equipamento
+            if (startTime < prevEquipmentTime) {
+                continue; // Pula para o próximo exercício disponível
+            }
+
+            // Atualiza os tempos de execução
             equipmentFreeTimes[equipmentIdx] = finishTime;
             studentsElapsedTimes.put(nextExercise.studentId, finishTime);
             currentSolution.add(nextExercise);
             studentProgress.put(student.studentId, progressIndex + 1);
 
+            // Chamada recursiva para explorar o próximo ramo
             exploreBranch(
                     academy, currentSolution, optimalBranchAndBoundSolution, minTime,
                     equipmentFreeTimes, studentsElapsedTimes, studentProgress);
 
-            // Execute backtracking
+            // Backtracking
             equipmentFreeTimes[equipmentIdx] = prevEquipmentTime;
             studentsElapsedTimes.put(nextExercise.studentId, prevStudentTime);
             currentSolution.remove(currentSolution.size() - 1);
             studentProgress.put(student.studentId, progressIndex);
         }
     }
+
 
     /**
      * Calculates an improved lower bound for the Branch-And-Bound algorithm
@@ -529,6 +554,8 @@ public class Main {
             for (int i = progressIndex; i < student.exercises.size(); i++) {
                 final Exercise exercise = student.exercises.get(i);
                 final int equipmentIdx = exercise.equipmentId - 1;
+
+                // Calcula o tempo estimado para o exercício restante
                 final double equipmentTime = equipmentFreeTimes[equipmentIdx];
                 final double studentTime = studentsElapsedTimes.getOrDefault(student.studentId, 0.0);
                 final double estimatedStartTime = Math.max(equipmentTime, studentTime);
@@ -539,6 +566,7 @@ public class Main {
 
         return lowerBound;
     }
+
     // endregion
 
     // region Approximate Heuristic
