@@ -38,7 +38,7 @@ import org.jfree.data.gantt.TaskSeriesCollection;
 
 public class Main {
     // region Objects
-    private static class Academy {
+    private static class Academy implements Cloneable {
         int M; // Equipment count
         int N; // Student count
         int n; // Exercise count
@@ -54,9 +54,20 @@ public class Main {
         public void addStudent(Student student) {
             students.add(student);
         }
+
+        @Override
+        protected Academy clone() {
+            final Academy clonedAcademy = new Academy(this.M, this.N, this.n);
+
+            for (Student student : this.students) {
+                clonedAcademy.addStudent(student.clone());
+            }
+
+            return clonedAcademy;
+        }
     }
 
-    private static class Student {
+    private static class Student implements Cloneable {
         int studentId;
         List<Exercise> exercises;
 
@@ -68,9 +79,18 @@ public class Main {
         public void addExercise(Exercise exercise) {
             exercises.add(exercise);
         }
+
+        @Override
+        protected Student clone() {
+            Student clonedStudent = new Student(this.studentId);
+            for (Exercise exercise : this.exercises) {
+                clonedStudent.addExercise(exercise.clone());
+            }
+            return clonedStudent;
+        }
     }
 
-    private static class Exercise {
+    private static class Exercise implements Cloneable {
         int studentId;
         int equipmentId;
         double duration; // In minutes
@@ -86,6 +106,11 @@ public class Main {
         public String toString() {
             return "Exercise: " + "studentId = " + studentId + ", equipmentId = " + equipmentId + ", duration = "
                     + duration;
+        }
+
+        @Override
+        public Exercise clone() {
+            return new Exercise(this.studentId, this.equipmentId, this.duration);
         }
     }
 
@@ -179,9 +204,8 @@ public class Main {
             final int seriesCount = chart.getCategoryPlot().getDataset().getRowCount();
             final GanttRenderer renderer = new GanttRenderer();
 
-            for (int i = 0; i < seriesCount; i++) {
+            for (int i = 0; i < seriesCount; i++)
                 renderer.setSeriesPaint(i, generateRandomColor());
-            }
 
             final CategoryPlot plot = chart.getCategoryPlot();
             plot.setRenderer(renderer);
@@ -613,17 +637,17 @@ public class Main {
             }
 
             long timeStart = System.nanoTime();
-            final List<Exercise> bruteForceSolution = handleBruteForcePermutation(academy);
+            final List<Exercise> bruteForceSolution = handleBruteForcePermutation(academy.clone());
             long timeEnd = System.nanoTime();
             long bruteForceTime = timeEnd - timeStart;
 
             timeStart = System.nanoTime();
-            final List<Exercise> branchAndBoundSolution = handleBranchAndBound(academy);
+            final List<Exercise> branchAndBoundSolution = handleBranchAndBound(academy.clone());
             timeEnd = System.nanoTime();
             long branchAndBoundTime = timeEnd - timeStart;
 
             timeStart = System.nanoTime();
-            final List<Exercise> approximateHeuristicSolution = approximateHeuristic(academy);
+            final List<Exercise> approximateHeuristicSolution = approximateHeuristic(academy.clone());
             timeEnd = System.nanoTime();
             long heuristicTime = timeEnd - timeStart;
 
