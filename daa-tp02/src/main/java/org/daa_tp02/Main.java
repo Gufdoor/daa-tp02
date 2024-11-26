@@ -1,8 +1,8 @@
 /**
  * Solution for DAA Project 02.
  *
- * @author  Daniel Lucas Murta
- * @author  Gabriel Luna dos Anjos
+ * @author Daniel Lucas Murta
+ * @author Gabriel Luna dos Anjos
  * @version 1.0.0
  */
 
@@ -170,7 +170,7 @@ public class Main {
 
         /**
          * Receives a Gantt and customizes its series colours. This way we can
-         * represents each student by different
+         * represent each student by different
          * colours.
          *
          * @param chart Gantt chart already created
@@ -303,7 +303,6 @@ public class Main {
             final double finishTime = startTime + exercise.duration;
 
             equipmentFreeTimes[equipmentIdIndex] = finishTime;
-            System.out.println("Equipment " + exercise.equipmentId + " time: " + finishTime + " minutes");
             studentsElapsedTimes.put(exercise.studentId, finishTime);
         }
 
@@ -324,7 +323,7 @@ public class Main {
      * @param permutations    result permutations
      */
     private static void generateBruteForcePermutations(List<Student> students, List<Exercise> stepPermutation,
-            List<List<Exercise>> permutations) {
+                                                       List<List<Exercise>> permutations) {
         if (students.isEmpty()) {
             permutations.add(new ArrayList<>(stepPermutation));
 
@@ -352,7 +351,7 @@ public class Main {
     private static List<Exercise> handleBruteForcePermutation(Academy academy) {
         final List<List<Exercise>> permutations = new ArrayList<>();
         generateBruteForcePermutations(academy.students, new ArrayList<>(), permutations);
-        System.out.println("Generate permutations count: " + permutations.size());
+        System.out.println("\nGenerate Brute Force permutations count: " + permutations.size());
 
         double minTime = Double.MAX_VALUE;
         List<Exercise> optimalBruteForceSolution = new ArrayList<>();
@@ -366,11 +365,11 @@ public class Main {
             }
         }
 
-        System.out.printf("%nLowest time: %.2f minutes%n", minTime);
-        System.out.println("%nOptimal Brute Force sequence solution:");
+        System.out.printf("Lowest time: %.2f minutes%n", minTime);
+        System.out.println("Optimal sequence solution:");
 
         for (Exercise exercise : optimalBruteForceSolution)
-            System.out.println(exercise);
+            System.out.println("> " + exercise);
 
         return optimalBruteForceSolution;
     }
@@ -387,7 +386,7 @@ public class Main {
     private static List<Exercise> handleBranchAndBound(Academy academy) {
         final List<Exercise> optimalBranchAndBoundSolution = new ArrayList<>();
         final List<Exercise> currentSolution = new ArrayList<>();
-        final double[] minTime = { Double.MAX_VALUE };
+        final double[] minTime = {Double.MAX_VALUE};
         final double[] equipmentFreeTimes = new double[academy.M];
         final Map<Integer, Double> studentsElapsedTimes = new HashMap<>();
         final Map<Integer, Integer> studentProgress = new HashMap<>();
@@ -399,12 +398,11 @@ public class Main {
         exploreBranch(academy, currentSolution, optimalBranchAndBoundSolution, minTime, equipmentFreeTimes,
                 studentsElapsedTimes, studentProgress);
 
-        System.out.printf("%nBranch-and-Bound Lowest time: %.2f minutes%n", minTime[0]);
-        System.out.println("Optimal Branch-and-Bound sequence solution:");
+        System.out.printf("\nBranch-and-Bound lowest time: %.2f minutes%n", minTime[0]);
+        System.out.println("Optimal sequence solution:");
 
-        for (Exercise exercise : optimalBranchAndBoundSolution) {
-            System.out.println(exercise);
-        }
+        for (Exercise exercise : optimalBranchAndBoundSolution)
+            System.out.println("> " + exercise);
 
         return optimalBranchAndBoundSolution;
     }
@@ -430,9 +428,9 @@ public class Main {
      *                                      exercise)
      */
     private static void exploreBranch(Academy academy, List<Exercise> currentSolution,
-            List<Exercise> optimalBranchAndBoundSolution,
-            double[] minTime, double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
-            Map<Integer, Integer> studentProgress) {
+                                      List<Exercise> optimalBranchAndBoundSolution,
+                                      double[] minTime, double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
+                                      Map<Integer, Integer> studentProgress) {
         final double currentElapsed = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
         final double lowerBound = calculateLowerBound(
                 academy, currentSolution, equipmentFreeTimes, studentsElapsedTimes, studentProgress);
@@ -496,8 +494,8 @@ public class Main {
      * @return the lower bound estimate as a double value
      */
     private static double calculateLowerBound(Academy academy, List<Exercise> currentSolution,
-            double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
-            Map<Integer, Integer> studentProgress) {
+                                              double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
+                                              Map<Integer, Integer> studentProgress) {
 
         double lowerBound = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
 
@@ -536,7 +534,7 @@ public class Main {
      *         completed
      */
     private static double handleApproximateHeuristicSchedule(int M, List<Exercise> currentSchedule,
-            Exercise nextExercise) {
+                                                             Exercise nextExercise) {
         final List<Exercise> timeSchedule = new ArrayList<>(currentSchedule);
 
         timeSchedule.add(nextExercise);
@@ -594,11 +592,11 @@ public class Main {
             }
         }
 
-        System.out.printf("%nLowest time: %.2f minutes%n", minTime);
-        System.out.println("Optimal Approximate Heuristic sequence solution:");
+        System.out.printf("\nApproximate Heuristic lowest time: %.2f minutes%n", minTime);
+        System.out.println("Optimal sequence solution:");
 
         for (Exercise exercise : approximateSolution)
-            System.out.println(exercise);
+            System.out.println("> " + exercise);
 
         return approximateSolution;
     }
@@ -614,18 +612,34 @@ public class Main {
                 throw new IllegalArgumentException("The number of equipment must be greater than 0");
             }
 
+            long timeStart = System.nanoTime();
             final List<Exercise> bruteForceSolution = handleBruteForcePermutation(academy);
-            final List<Exercise> approximateHeuristicSolution = approximateHeuristic(academy);
+            long timeEnd = System.nanoTime();
+            long bruteForceTime = timeEnd - timeStart;
+
+            timeStart = System.nanoTime();
             final List<Exercise> branchAndBoundSolution = handleBranchAndBound(academy);
+            timeEnd = System.nanoTime();
+            long branchAndBoundTime = timeEnd - timeStart;
+
+            timeStart = System.nanoTime();
+            final List<Exercise> approximateHeuristicSolution = approximateHeuristic(academy);
+            timeEnd = System.nanoTime();
+            long heuristicTime = timeEnd - timeStart;
+
+            System.out.println("\nBrute-Force Time: " + (bruteForceTime / 1_000_000.0) + " milissegundos");
+            System.out.println("Branch and Bound Time: " + (branchAndBoundTime / 1_000_000.0) + " milissegundos");
+            System.out.println("Heuristic Time: " + (heuristicTime / 1_000_000.0) + " milissegundos");
+
             final ChartPanel bruteForceChart = ChartPlotter.handleGanttChart("Brute-Force Solution",
                     bruteForceSolution);
-            final ChartPanel heuristicChart = ChartPlotter.handleGanttChart("Approximate Heuristic Solution",
-                    approximateHeuristicSolution);
             final ChartPanel branchBoundChart = ChartPlotter.handleGanttChart("Branch and Bound Solution",
                     branchAndBoundSolution);
-            final List<String> chartTabTitles = Arrays.asList("Brute-Force", "Approximate Heuristic",
-                    "Branch and Bound");
-            final List<ChartPanel> chartPanels = Arrays.asList(bruteForceChart, heuristicChart, branchBoundChart);
+            final ChartPanel heuristicChart = ChartPlotter.handleGanttChart("Approximate Heuristic Solution",
+                    approximateHeuristicSolution);
+            final List<String> chartTabTitles = Arrays.asList("Brute-Force", "Branch and Bound",
+                    "Approximate Heuristic");
+            final List<ChartPanel> chartPanels = Arrays.asList(bruteForceChart, branchBoundChart, heuristicChart);
 
             ChartPlotter.plotGanttChart(chartTabTitles, chartPanels);
         } catch (IOException e) {
