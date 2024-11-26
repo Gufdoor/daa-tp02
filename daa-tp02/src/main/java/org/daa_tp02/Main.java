@@ -323,7 +323,7 @@ public class Main {
      * @param permutations    result permutations
      */
     private static void generateBruteForcePermutations(List<Student> students, List<Exercise> stepPermutation,
-                                                       List<List<Exercise>> permutations) {
+            List<List<Exercise>> permutations) {
         if (students.isEmpty()) {
             permutations.add(new ArrayList<>(stepPermutation));
 
@@ -386,7 +386,7 @@ public class Main {
     private static List<Exercise> handleBranchAndBound(Academy academy) {
         final List<Exercise> optimalBranchAndBoundSolution = new ArrayList<>();
         final List<Exercise> currentSolution = new ArrayList<>();
-        final double[] minTime = {Double.MAX_VALUE};
+        final double[] minTime = { Double.MAX_VALUE };
         final double[] equipmentFreeTimes = new double[academy.M];
         final Map<Integer, Double> studentsElapsedTimes = new HashMap<>();
         final Map<Integer, Integer> studentProgress = new HashMap<>();
@@ -428,9 +428,9 @@ public class Main {
      *                                      exercise)
      */
     private static void exploreBranch(Academy academy, List<Exercise> currentSolution,
-                                      List<Exercise> optimalBranchAndBoundSolution,
-                                      double[] minTime, double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
-                                      Map<Integer, Integer> studentProgress) {
+            List<Exercise> optimalBranchAndBoundSolution,
+            double[] minTime, double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
+            Map<Integer, Integer> studentProgress) {
         final double currentElapsed = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
         final double lowerBound = calculateLowerBound(
                 academy, currentSolution, equipmentFreeTimes, studentsElapsedTimes, studentProgress);
@@ -494,8 +494,8 @@ public class Main {
      * @return the lower bound estimate as a double value
      */
     private static double calculateLowerBound(Academy academy, List<Exercise> currentSolution,
-                                              double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
-                                              Map<Integer, Integer> studentProgress) {
+            double[] equipmentFreeTimes, Map<Integer, Double> studentsElapsedTimes,
+            Map<Integer, Integer> studentProgress) {
 
         double lowerBound = Arrays.stream(equipmentFreeTimes).max().orElse(0.0);
 
@@ -534,7 +534,7 @@ public class Main {
      *         completed
      */
     private static double handleApproximateHeuristicSchedule(int M, List<Exercise> currentSchedule,
-                                                             Exercise nextExercise) {
+            Exercise nextExercise) {
         final List<Exercise> timeSchedule = new ArrayList<>(currentSchedule);
 
         timeSchedule.add(nextExercise);
